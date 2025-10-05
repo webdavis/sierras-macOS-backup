@@ -1,3 +1,16 @@
-# ⚠️ The following credential-based files must absolutely NEVER be committed!!! 
-*secret*                                                                        
-pat.txt                                                                         
+# Ignore Neovim/Vim swap files.
+*.sw*
+
+# Ignore Mac Finder metadata files.
+.DS_Store
+
+# Ignore this folder and its contents. This is a temporary, and by no means safe, solution to
+# preventing Git from tracking temporary work.
+private/*
+
+# But keep the folder itself (via a .gitkeep file or empty placeholder).
+!private/.gitkeep
+
+# ⚠️ The following credential-based files must absolutely NEVER be committed!!!
+*secret*
+pat.txt
