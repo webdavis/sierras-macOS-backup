@@ -4,3 +4,6 @@
 
 [core]
   editor = nvim
+
+[credential]
+  helper = !gh auth git-credential
