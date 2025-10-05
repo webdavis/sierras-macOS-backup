@@ -20,3 +20,4 @@ cask "microsoft-auto-update" # Provides automatic updates to various Microsoft p
 cask "obsidian" # My note taking app.
 cask "raycast" # Spotlight replacement.
 cask "spotify" # Music streaming service.
+cask "warp" # Terminal with AI integration.
