@@ -1,3 +1,6 @@
 [user]
   name = Stephen A. Davis
   email = 23553256+webdavis@users.noreply.github.com
+
+[core]
+  editor = nvim
