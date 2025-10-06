@@ -12,5 +12,6 @@ private/*
 !private/.gitkeep
 
 # ⚠️ The following credential-based files must absolutely NEVER be committed!!!
+# Also, these exclusions should be added to the .chezmoiignore file.
 *secret*
 pat.txt

@@ -1,4 +1,6 @@
 README.md
 
+# Prevent credentials from being copied outside this project.
+# ⚠️ These exclusions should mirror the exclusions in .gitignore
 *secret*
 pat.txt
