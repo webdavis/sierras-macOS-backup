@@ -1,4 +1,5 @@
 
-eval "$(/opt/homebrew/bin/brew shellenv)"
-
-EDITOR="$(which nvim)"
+# Source interactive shell settings.
+if [ -f ~/.zshrc ]; then
+  source ~/.zshrc
+fi
