@@ -1,3 +1,42 @@
+# shellcheck shell=zsh
+#
+# ┌ ~/.zprofile ────────────────────────────────────────────────────────────────────────────────┐
+# │                                                                                             │
+# │ Purpose: Configures Zsh for login shells on macOS.                                          │
+# │                                                                                             │
+# │ Overview                                                                                    │
+# │ ‾‾‾‾‾‾‾‾                                                                                    │
+# │   - Use .zprofile for login-shell-only configuration.                                       │
+# │   - Use .zshrc for interactive-shell configuration.                                         │
+# │   - Sourcing .zshrc from .zprofile ensures login shells get interactive settings without    │
+# │     duplicating code.                                                                       │
+# │                                                                                             │
+# │ Login vs Interactive shells                                                                 │
+# │ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾                                                                 │
+# │   1. A "login shell" runs when you first start a terminal session, e.g., opening            │
+# │      Terminal.app, iTerm2, or logging in via SSH. It reads login-specific files like this   │
+# │      ~/.zprofile file.                                                                      │
+# │   2. An "interactive shell" lets you type commands directly. Most login shells are also     │
+# │      interactive, but shells started from another shell (e.g. running `zsh` in the          │
+# │      terminal, `chezmoi cd`, `poetry activate`, etc) may be interactive only.               │
+# │                                                                                             │
+# │ What .zprofile does                                                                         │
+# │ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾                                                                         │
+# │   - Sets up environment variables that should exist for the whole login session, such as    │
+# │     PATH modifications for Homebrew or GUI apps.                                            │
+# │   - Sources .zshrc so that interactive shell settings (like aliases, functions, and prompt  │
+# │     customization) are available in login shells too.                                       │
+# │   - Provides a place for any configuration that should only run once per login, rather than │
+# │     every time you open a new terminal tab.                                                 │
+# │                                                                                             │
+# │ Why not put everything in .zshrc?                                                           │
+# │ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾                                                           │
+# │   - .zshrc runs every time you start an interactive shell, which could be many times in a   │
+# │     single login session.                                                                   │
+# │   - Some settings, like PATH adjustments for GUI apps or environment variables, only need   │
+# │     to be set once; otherwise, they may accumulate or behave incorrectly.                   │
+# │                                                                                             │
+# └─────────────────────────────────────────────────────────────────────────────────────────────┘
 
 # Source interactive shell settings.
 if [ -f ~/.zshrc ]; then
