@@ -14,7 +14,8 @@ To use these dotfiles on your system:
 
 1. **Install Chezmoi**
 
-Follow the instructions for `macOS` at [https://www.chezmoi.io/install/](https://www.chezmoi.io/install/)
+Follow the instructions for `macOS` at
+[https://www.chezmoi.io/install/](https://www.chezmoi.io/install/)
 
 ```bash
 brew install chezmoi
