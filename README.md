@@ -1,6 +1,18 @@
 # Sierra's macOS Backup
 
-This repo tracks Sierra's macOS tooling and setup.
+This repo automates the configuration of Sierra's personal macOS setup.
+
+## Computer Specs
+
+*As of October 8, 2025*
+
+| Specification | Details                            |
+| ------------- | ---------------------------------- |
+| Device        | MacBook Pro 14-inch (M1 Pro, 2021) |
+| OS Version    | `Tahoe 26.0`                       |
+| Chip          | `Apple M1 Pro`                     |
+| SSD           | `512 GB`                           |
+| RAM           | `16 GB`                            |
 
 ## Setup
 
