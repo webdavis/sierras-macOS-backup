@@ -14,10 +14,16 @@
         pkgs.ruby_3_4  # This comes with Bundler included.
       ];
 
-      # Note: This project already tracks the ./bundle/config file which sets the bundle path to vendor/bundle.
-      # The `bundle config set path 'vendor/bundle'` command below also enforces it as a fail-safe.
+      # Note: This project already tracks the ./bundle/config file, which the ensures that gems
+      # are installed into the project-local './vendor/bundle' directory, but we enforce it
+      # here as a fail-safe.
       shellHook = ''
         bundle config set path 'vendor/bundle'
+
+        if [ ! -d vendor/bundle ] || ! bundle check > /dev/null 2>&1; then
+          echo "Installing gems..."
+          bundle install --jobs 4 --retry 3
+        fi
       '';
     };
 
@@ -32,7 +38,7 @@
 
         projectName="$(basename "$PWD")"
 
-        echo -e "''${blue}Entering Brewfile linting environment...''${reset}\n"
+        echo -e "\n''${blue}Entering Brewfile linting environment...''${reset}\n"
         echo -e "''${bold}Project:''${reset} ''${green}''${projectName}''${reset}"
         echo -e "''${bold}Ruby version:''${reset} ''${red}${pkgs.ruby_3_4.version}''${reset}"
         echo -e "''${bold}Rubocop version:''${reset} ''${red}$(bundle exec rubocop -v)''${reset}"
