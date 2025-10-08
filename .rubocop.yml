@@ -1,0 +1,7 @@
+AllCops:
+  TargetRubyVersion: 3.4.6
+  NewCops: enable
+
+Naming/FileName:
+  Exclude:
+    - 'dot_Brewfile'
