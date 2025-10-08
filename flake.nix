@@ -18,16 +18,18 @@
         red="\e[91m"
         green="\e[32m"
         blue="\e[34m"
+        bold="\e[1m"
         reset="\e[0m"
+
         projectName="$(basename "$PWD")"
 
-        # ./bundle/config already sets this, but we enforce it as a fail-safe.
+        # ./bundle/config already sets this, but we enforce it here as a fail-safe.
         bundle config set path 'vendor/bundle'
 
-        echo -e "''${blue}Entering Brewfile linting environment...''${reset}"
-        echo -e "Project: ''${green}''${projectName}''${reset}"
-        echo -e "Ruby version: ''${red}${pkgs.ruby_3_4.version}''${reset}"
-        echo -e "Rubocop version: ''${red}$(bundle exec rubocop -v)''${reset}"
+        echo -e "''${blue}Entering Brewfile linting environment...''${reset}\n"
+        echo -e "''${bold}Project:''${reset} ''${green}''${projectName}''${reset}"
+        echo -e "''${bold}Ruby version:''${reset} ''${red}${pkgs.ruby_3_4.version}''${reset}"
+        echo -e "''${bold}Rubocop version:''${reset} ''${red}$(bundle exec rubocop -v)''${reset}"
       '';
     };
   });
