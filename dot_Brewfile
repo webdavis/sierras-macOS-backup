@@ -4,20 +4,20 @@
 # ┌─────────────────────────────┐
 # │   🛠️ Utilities (formulae)   │
 # └─────────────────────────────┘
-brew "neovim" # Preferred console based editor.
-brew "git" # Version control tracking.
-brew "chezmoi" # Dotfile manager.
-brew "croc" # Simple way to securely transfer secrets between computers.
+brew 'neovim' # Preferred console based editor.
+brew 'git' # Version control tracking.
+brew 'chezmoi' # Dotfile manager.
+brew 'croc' # Simple way to securely transfer secrets between computers.
 
 
 # ┌───────────────────────────────┐
 # │   🖥️ /Applications/ (casks)   │
 # └───────────────────────────────┘
-cask "arc" # A better web browser.
-cask "chatgpt" # OpenAI's official ChatGPT desktop app.
-cask "microsoft-office" # Microsoft's official Office suite (Word, Excel, etc).
-cask "microsoft-auto-update" # Provides automatic updates to various Microsoft products.
-cask "obsidian" # My note taking app.
-cask "raycast" # Spotlight replacement.
-cask "spotify" # Music streaming service.
-cask "warp" # Terminal with AI integration.
+cask 'arc' # A better web browser.
+cask 'chatgpt' # OpenAI's official ChatGPT desktop app.
+cask 'microsoft-office' # Microsoft's official Office suite (Word, Excel, etc).
+cask 'microsoft-auto-update' # Provides automatic updates to various Microsoft products.
+cask 'obsidian' # My note taking app.
+cask 'raycast' # Spotlight replacement.
+cask 'spotify' # Music streaming service.
+cask 'warp' # Terminal with AI integration.
