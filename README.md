@@ -84,5 +84,5 @@ nix develop .#adhoc --command bundle exec rubocop -v
 I think it's likely this project will transition away from Homebrew entirely in favor of
 [nix-darwin](https://github.com/nix-darwin/nix-darwin).
 
-For an example of what this setup might look like, see
+To see what this might look like, see
 [webdavis/mac-dev-config](https://github.com/webdavis/mac-dev-config).
