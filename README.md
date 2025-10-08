@@ -33,7 +33,7 @@ This project's development environment is managed using
 [Nix Flakes](https://wiki.nixos.org/wiki/Flakes), and is defined in the
 [`flake.nix`](./flake.nix) file.
 
-### 1. Install Nix
+### Prerequisite: Install Nix
 
 Install Nix using the
 [Nix Installer from Determinate Systems](https://github.com/DeterminateSystems/nix-installer):
@@ -48,15 +48,17 @@ curl -fsSL https://install.determinate.systems/nix | sh -s -- install
 >
 > - **Why:** As of `2025-10-07`, Determinate Nix is incompatible with nix-darwin 25.05
 
-### 2. Enter the Dev Environment
+### Using the Development Environment
 
-Enter the flake's development environment:
+You have two options for using the flake environment:
+
+#### 1. Enter the Dev Shell
+
+Drop into a persistent development shell with all tools provisioned by the flake:
 
 ```bash
 nix develop
 ```
-
-This command drops you into a shell with all of the tools provisioned by the flake.
 
 For example, you can now lint the project's [`dot_Brewfile`](./dot_Brewfile) using
 [RuboCop](https://github.com/rubocop/rubocop):
@@ -64,6 +66,18 @@ For example, you can now lint the project's [`dot_Brewfile`](./dot_Brewfile) usi
 ```bash
 bundle exec rubocop dot_Brewfile
 ```
+
+#### 2. Run Commands Adhoc
+
+Run a single command in a temporary environment without entering the shell:
+
+```bash
+nix develop .#adhoc --command bundle exec rubocop -v
+```
+
+> [!TIP]
+> Replace `bundle exec rubocop -v` with any other command you want to run in the development
+> environment.
 
 ### Moving Forward...
 
