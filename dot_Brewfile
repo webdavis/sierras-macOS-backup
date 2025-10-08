@@ -9,7 +9,6 @@ brew 'git' # Version control tracking.
 brew 'chezmoi' # Dotfile manager.
 brew 'croc' # Simple way to securely transfer secrets between computers.
 
-
 # ┌───────────────────────────────┐
 # │   🖥️ /Applications/ (casks)   │
 # └───────────────────────────────┘
