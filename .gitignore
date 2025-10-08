@@ -15,3 +15,6 @@ private/*
 # Also, these exclusions should be added to the .chezmoiignore file.
 *secret*
 pat.txt
+
+## Ignore Ruby project dependencies.
+vendor/
