@@ -16,4 +16,4 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
 
       - name: Lint the Brewfile
-        run: nix develop .#adhoc --command bundle exec rubocop dot_Brewfile
+        run: nix develop .#adhoc --command ./scripts/lint.sh
