@@ -15,5 +15,5 @@ jobs:
       - name: Install Upstream Nix using the Nix Installer from Determinate Systems
         uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Lint the Brewfile
+      - name: Lint project files
         run: nix develop .#adhoc --command ./scripts/lint.sh
