@@ -9,7 +9,7 @@
   outputs = { self, nixpkgs, flake-utils, ... }: flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-darwin" ] (system: let
     pkgs = import nixpkgs { inherit system; };
 
-    defaultShell = pkgs.mkShell {
+    baseShell = pkgs.mkShell {
       buildInputs = [
         pkgs.ruby_3_4  # This comes with Bundler included.
       ];
@@ -28,8 +28,8 @@
     };
 
     interactiveShell = pkgs.mkShell {
-      buildInputs = defaultShell.buildInputs;
-      shellHook = defaultShell.shellHook + ''
+      buildInputs = baseShell.buildInputs;
+      shellHook = baseShell.shellHook + ''
         red="\e[91m"
         green="\e[32m"
         blue="\e[34m"
@@ -44,11 +44,9 @@
         echo -e "''${bold}Rubocop version:''${reset} ''${red}$(bundle exec rubocop -v)''${reset}"
       '';
     };
-
-    adhocShell = defaultShell;
   in {
       devShells.default = interactiveShell;
-      devShells.adhoc = adhocShell;
+      devShells.adhoc = baseShell;
     }
   );
 }
