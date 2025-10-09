@@ -18,10 +18,12 @@ fi
 
 echo "RuboCop path: $(bundle exec which rubocop)"
 echo "RuboCop version: $(bundle exec rubocop -v)"
-echo
-
 echo "Linting '${BREWFILE}' with RuboCop..."
 bundle exec rubocop --display-time -- "$BREWFILE"
+echo
 
+echo "nix fmt path: $(which treefmt)"
+echo "nix fmt version: $(nix fmt -- --version)"
 echo "Linting '${FLAKE_NIX_FILE}' with nix fmt..."
-nix fmt "$FLAKE_NIX_FILE"
+nix fmt -- --verbose "$FLAKE_NIX_FILE"
+echo
