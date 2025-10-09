@@ -18,11 +18,13 @@
       # are installed into the project-local './vendor/bundle' directory, but we enforce it
       # here as a fail-safe.
       shellHook = ''
+        echo
         bundle config set path 'vendor/bundle'
 
         if [ ! -d vendor/bundle ] || ! bundle check > /dev/null 2>&1; then
           echo "Installing gems..."
           bundle install --jobs 4 --retry 3
+          echo
         fi
       '';
     };
@@ -38,7 +40,7 @@
 
         projectName="$(basename "$PWD")"
 
-        echo -e "\n''${blue}Entering Brewfile linting environment...''${reset}\n"
+        echo -e "''${blue}Entering Brewfile linting environment...''${reset}\n"
         echo -e "''${bold}Project:''${reset} ''${green}''${projectName}''${reset}"
         echo -e "''${bold}Ruby version:''${reset} ''${red}${pkgs.ruby_3_4.version}''${reset}"
         echo -e "''${bold}Rubocop version:''${reset} ''${red}$(bundle exec rubocop -v)''${reset}"
