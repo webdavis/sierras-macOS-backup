@@ -5,7 +5,7 @@ set -eu
 
 # Target files:
 BREWFILE="dot_Brewfile"
-FLAKE_NIX_FILE="flake.nix"
+NIX_FLAKE_FILE="flake.nix"
 
 # Ensure this script runs from the project root.
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
@@ -27,9 +27,9 @@ echo "Linting '${BREWFILE}' with RuboCop..."
 bundle exec rubocop --display-time -- "$BREWFILE"
 echo
 
-check_file "$FLAKE_NIX_FILE"
+check_file "$NIX_FLAKE_FILE"
 echo "nix fmt path: $(which treefmt)"
 echo "nix fmt version: $(nix fmt -- --version)"
-echo "Linting '${FLAKE_NIX_FILE}' with nix fmt..."
-nix fmt -- --verbose "$FLAKE_NIX_FILE"
+echo "Linting '${NIX_FLAKE_FILE}' with nix fmt..."
+nix fmt -- --verbose "$NIX_FLAKE_FILE"
 echo
