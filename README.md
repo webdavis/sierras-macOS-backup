@@ -1,5 +1,7 @@
 # Sierra's macOS Backup
 
+[![Lint](https://github.com/webdavis/sierras-macOS-backup/actions/workflows/lint.yml/badge.svg)](https://github.com/webdavis/sierras-macOS-backup/actions/workflows/lint.yml)
+
 This repo automates the configuration of Sierra's personal macOS setup.
 
 ## Computer Specs
