@@ -1,5 +1,16 @@
 {
-  description = "A development shell for linting Brewfiles with Rubocop";
+  description = ''
+    Project development environment and dependency management flake.
+
+    Provides:
+      - Separate interactive and ad-hoc dev shells
+      - Ruby 3.4 with Bundler
+      - Project-local gem installation in ./vendor/bundle
+      - RuboCop linting (ensures consistent Ruby style in the dot_Brewfile)
+        ↪ Ref: https://github.com/rubocop/rubocop
+      - Nixfmt for formatting Nix expressions
+        ↪ Ref: https://github.com/NixOS/nixfmt?tab=readme-ov-file#nix-fmt-experimental
+  '';
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
