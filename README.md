@@ -18,15 +18,14 @@ This repo automates the configuration of Sierra's personal macOS setup.
 
 ## Setup
 
-This repository contains Sierra's personal configuration files, managed by the following tools:
-
-- [Chezmoi](https://www.chezmoi.io/).
+This project tracks Sierra's personal configuration files, managed by
+[Chezmoi](https://www.chezmoi.io/).
 
 ### Dotfiles via Chezmoi
 
-To use these dotfiles on your system:
+To use these dotfiles:
 
-1. **Install Chezmoi**
+1. **Install Chezmoi:**
 
 Follow the instructions for `macOS` at
 [https://www.chezmoi.io/install/](https://www.chezmoi.io/install/)
@@ -35,7 +34,7 @@ Follow the instructions for `macOS` at
 brew install chezmoi
 ```
 
-2. **Initialize Chezmoi with this repository**
+2. **Initialize Chezmoi with this repository:**
 
 ```bash
 chezmoi init --apply https://github.com/webdavis/sierras-macOS-backup.git
@@ -74,8 +73,8 @@ Drop into a persistent development shell with all tools provisioned by the flake
 nix develop
 ```
 
-For example, you can now lint the project's [`dot_Brewfile`](./dot_Brewfile) using
-[RuboCop](https://github.com/rubocop/rubocop):
+For example, once inside this shell you can lint the project's [`dot_Brewfile`](./dot_Brewfile)
+with [RuboCop](https://github.com/rubocop/rubocop) by running Bundler directly:
 
 ```bash
 bundle exec rubocop dot_Brewfile
@@ -86,17 +85,17 @@ bundle exec rubocop dot_Brewfile
 Run a single command in a temporary environment without entering the shell:
 
 ```bash
-nix develop .#adhoc --command bundle exec rubocop -v
+nix develop .#adhoc --command bundle exec rubocop dot_Brewfile
 ```
 
 > [!TIP]
-> Replace `bundle exec rubocop -v` with any other command you want to run in the development
-> environment.
+> Replace `bundle exec rubocop dot_Brewfile` with any other command you want to run in the
+> development environment.
 
 ### Moving Forward...
 
-I think it's likely this project will transition away from Homebrew entirely in favor of
+I think it's likely that this project will transition away from Homebrew in favor of
 [nix-darwin](https://github.com/nix-darwin/nix-darwin).
 
-To see what this might look like, see
+To see what this might look like, check out
 [webdavis/mac-dev-config](https://github.com/webdavis/mac-dev-config).
