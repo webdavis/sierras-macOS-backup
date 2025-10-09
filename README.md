@@ -25,20 +25,20 @@ This project tracks Sierra's personal configuration files, managed by
 
 To use these dotfiles:
 
-1. **Install Chezmoi:**
+1. **Install Chezmoi**
 
-Follow the instructions for `macOS` at
-[https://www.chezmoi.io/install/](https://www.chezmoi.io/install/)
+   Follow the instructions for `macOS` at
+   [https://www.chezmoi.io/install/](https://www.chezmoi.io/install/)
 
-```bash
-brew install chezmoi
-```
+   ```bash
+   brew install chezmoi
+   ```
 
-2. **Initialize Chezmoi with this repository:**
+2. **Initialize Chezmoi with this repository**
 
-```bash
-chezmoi init --apply https://github.com/webdavis/sierras-macOS-backup.git
-```
+   ```bash
+   chezmoi init --apply https://github.com/webdavis/sierras-macOS-backup.git
+   ```
 
 ## Development Environment
 
