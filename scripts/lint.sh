@@ -126,14 +126,14 @@ TOOL_STATUSES=(
 )
 
 {
-  echo -e "Tool\tStatus"
-  echo -e "-------\t-------"
+  printf "%s\t%s\n" "Tool" "Status"
+  printf "%s\t%s\n" "-------" "-------"
   for status in "${TOOL_STATUSES[@]}"; do
     IFS=":" read -r name code <<< "$status"
     if [ "$code" -eq 0 ]; then
-      echo -e "$name\t✅"
+      printf "%s\t%s\n" "$name" "✅"
     else
-      echo -e "$name\t❌"
+      printf "%s\t%s\n" "$name" "❌"
     fi
   done
 } | column -t
