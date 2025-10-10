@@ -42,6 +42,7 @@
               ]
             ))
             pkgs.shellcheck
+            pkgs.shfmt
           ];
 
           # Note: This project already tracks the ./bundle/config file, which the ensures that gems
@@ -56,6 +57,10 @@
               bundle install --jobs 4 --retry 3
               echo
             fi
+
+            shfmt() {
+              command shfmt -i 2 -ci -s "$@"
+            }
           '';
         };
 
@@ -80,6 +85,7 @@
             echo -e "''${bold}mdformat version:''${reset} ''${red}$(mdformat --version)''${reset}"
             echo -e "''${bold}Bash version:''${reset} ''${red}$(bash --version | head -n 1)''${reset}"
             echo -e "''${bold}shellcheck version:''${reset} ''${red}$(shellcheck --version | awk '/^version:/ {print $2}')''${reset}"
+            echo -e "''${bold}shfmt version:''${reset} ''${red}$(shfmt --version)''${reset}"
           '';
         };
       in

@@ -22,11 +22,11 @@ cleanup() {
 }
 
 setup_signal_handling() {
-    # Handle process interruption signals.
-    trap cleanup SIGINT SIGTERM
+  # Handle process interruption signals.
+  trap cleanup SIGINT SIGTERM
 
-    # Handle the EXIT signal for any script termination.
-    trap cleanup EXIT
+  # Handle the EXIT signal for any script termination.
+  trap cleanup EXIT
 }
 
 setup_signal_handling
@@ -54,7 +54,7 @@ require_file() {
     fi
   done
 
-  if (( ${#missing_files[@]} )); then
+  if ((${#missing_files[@]})); then
     local msg="Error: The following required file(s) are missing in the project root (${PROJECT_ROOT##*/}): "
     msg+="${missing_files[*]}. Linting & formatting aborted."
 
@@ -63,7 +63,7 @@ require_file() {
   fi
 }
 
-require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README"
+require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$SCRIPT"
 
 file_snapshot() {
   local file="$1"
@@ -92,6 +92,7 @@ RUBOCOP_EXIT_CODE=0
 NIXFMT_EXIT_CODE=0
 MDFORMAT_EXIT_CODE=0
 SHELLCHECK_EXIT_CODE=0
+SHFMT_EXIT_CODE=0
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
@@ -166,6 +167,26 @@ echo "Running shellcheck on '${SCRIPT}' (linting)..."
 shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE=1
 echo
 
+echo "┏━━━━━━━━━━━━━━━━━━━━━━┓"
+echo "┃  SHFMT (FORMATTING)  ┃"
+echo "┗━━━━━━━━━━━━━━━━━━━━━━┛"
+echo "📌 [Info]"
+echo "───────────"
+echo "shfmt path: $(command -v shfmt)"
+echo "shfmt version: $(shfmt --version)"
+echo
+
+SCRIPT_SNAPSHOT="$(file_snapshot "$SCRIPT" ".lint.sh")"
+
+echo "🛠️ [Execution]"
+echo "────────────────"
+echo "Running shfmt on '${SCRIPT}' (applying formatting)..."
+shfmt -i 2 -ci -s --diff "$SCRIPT" >/dev/null 2>&1 || SHFMT_EXIT_CODE=1
+shfmt -i 2 -ci -s --write "$SCRIPT"
+echo
+
+git_diff "$SCRIPT_SNAPSHOT" "$SCRIPT" "$SHFMT_EXIT_CODE"
+
 echo "┏━━━━━━━━━━━┓"
 echo "┃  SUMMARY  ┃"
 echo "┗━━━━━━━━━━━┛"
@@ -176,6 +197,7 @@ TOOL_STATUSES=(
   "nixfmt:$NIXFMT_EXIT_CODE"
   "mdformat:$MDFORMAT_EXIT_CODE"
   "shellcheck:$SHELLCHECK_EXIT_CODE"
+  "shfmt:$SHFMT_EXIT_CODE"
 )
 
 EXIT_CODE=0
@@ -187,7 +209,7 @@ for status in "${TOOL_STATUSES[@]}"; do
   name="${status%%:*}"
   code="${status##*:}"
 
-  if (( code )); then
+  if ((code)); then
     line="${name}\t❌\n"
     EXIT_CODE=1
   else
