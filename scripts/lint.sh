@@ -120,11 +120,16 @@ echo "┃  SUMMARY  ┃"
 echo "┗━━━━━━━━━━━┛"
 echo
 
+TOOL_STATUSES=(
+  "RuboCop:$RUBOCOP_EXIT_CODE"
+  "nixfmt:$NIXFMT_EXIT_CODE"
+)
+
 {
   echo -e "Tool\tStatus"
   echo -e "-------\t-------"
-  for tool in "RuboCop:$RUBOCOP_EXIT_CODE" "nixfmt:$NIXFMT_EXIT_CODE"; do
-    IFS=":" read -r name code <<< "$tool"
+  for status in "${TOOL_STATUSES[@]}"; do
+    IFS=":" read -r name code <<< "$status"
     if [ "$code" -eq 0 ]; then
       echo -e "$name\t✅"
     else
