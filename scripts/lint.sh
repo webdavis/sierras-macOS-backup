@@ -35,7 +35,7 @@ if [ -z "${PROJECT_ROOT:-}" ]; then
 fi
 
 if ! cd "$PROJECT_ROOT"; then
-  echo "Error: could not change into project root directory (${PROJECT_ROOT})" >&2
+  echo "Error: could not change into project root directory (${PROJECT_ROOT##*/})" >&2
   exit 1
 fi
 
@@ -43,7 +43,7 @@ check_file() {
   local file="$1"
 
   if [ ! -f "$file" ]; then
-    echo "Error: '$file' is missing in the project root ($PROJECT_ROOT). Linting aborted." >&2
+    echo "Error: '$file' is missing in the project root (${PROJECT_ROOT##*/}). Linting aborted." >&2
     exit 1
   fi
 }
