@@ -69,6 +69,19 @@ file_snapshot() {
   echo "$snapshot"
 }
 
+git_diff() {
+  local snapshot="$1"
+  local file="$2"
+  local tool_status="$3"
+
+  if [ "$tool_status" -eq 1 ]; then
+    echo "📝 [Diff]"
+    echo "───────────"
+    GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$snapshot" "$file"
+    echo
+  fi
+}
+
 require_file "$BREWFILE" "$NIX_FLAKE_FILE"
 
 RUBOCOP_EXIT_CODE=0
@@ -91,12 +104,7 @@ echo "Running RuboCop on '${BREWFILE}' (linting, formatting, and applying correc
 bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
 echo
 
-if [ $RUBOCOP_EXIT_CODE -eq 1 ]; then
-  echo "📝 [Diff]"
-  echo "───────────"
-  GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$BREWFILE_SNAPSHOT" "$BREWFILE"
-  echo
-fi
+git_diff "$BREWFILE_SNAPSHOT" "$BREWFILE" "$RUBOCOP_EXIT_CODE"
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  NIXFMT (FORMATTING)  ┃"
@@ -116,12 +124,7 @@ echo "Running nix fmt '${NIX_FLAKE_FILE}' (applying formatting)..."
 nix fmt -- --ci --quiet "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
 echo
 
-if [ $NIXFMT_EXIT_CODE -eq 1 ]; then
-  echo "📝 [Diff]"
-  echo "───────────"
-  GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE"
-  echo
-fi
+git_diff "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE" "$NIXFMT_EXIT_CODE"
 
 echo "┏━━━━━━━━━━━┓"
 echo "┃  SUMMARY  ┃"
