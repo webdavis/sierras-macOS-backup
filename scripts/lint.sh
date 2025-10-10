@@ -125,19 +125,24 @@ TOOL_STATUSES=(
   "nixfmt:$NIXFMT_EXIT_CODE"
 )
 
-{
-  printf "%s\t%s\n" "Tool" "Status"
-  printf "%s\t%s\n" "-------" "-------"
-  for status in "${TOOL_STATUSES[@]}"; do
-    IFS=":" read -r name code <<< "$status"
-    if [ "$code" -eq 0 ]; then
-      printf "%s\t%s\n" "$name" "✅"
-    else
-      printf "%s\t%s\n" "$name" "❌"
-    fi
-  done
-} | column -t
+EXIT_CODE=0
 
-if [ $RUBOCOP_EXIT_CODE -ne 0 ] || [ $NIXFMT_EXIT_CODE -ne 0 ]; then
-  exit 1
-fi
+OUTPUT="Tool\tStatus\n"
+OUTPUT+="-------\t-------\n"
+
+for status in "${TOOL_STATUSES[@]}"; do
+  name="${status%%:*}"
+  code="${status##*:}"
+
+  if (( code )); then
+    line="${name}\t❌\n"
+    EXIT_CODE=1
+  else
+    line="${name}\t✅\n"
+  fi
+  OUTPUT+="$line"
+done
+
+printf "%b" "$OUTPUT" | column -t
+
+[[ $EXIT_CODE -eq 0 ]] || exit 1
