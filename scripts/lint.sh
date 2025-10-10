@@ -8,6 +8,7 @@ BREWFILE="dot_Brewfile"
 NIX_FLAKE_FILE="flake.nix"
 README="README.md"
 SCRIPT="scripts/lint.sh"
+BREW_SYNC_CHECK="scripts/brew-sync-check.sh"
 
 cleanup() {
   # Exit with the status of the command that triggered this trap.
@@ -17,6 +18,7 @@ cleanup() {
   [ -f "${NIX_FLAKE_FILE_SNAPSHOT:-}" ] && rm "$NIX_FLAKE_FILE_SNAPSHOT"
   [ -f "${README_SNAPSHOT:-}" ] && rm "$README_SNAPSHOT"
   [ -f "${SCRIPT_SNAPSHOT:-}" ] && rm "$SCRIPT_SNAPSHOT"
+  [ -f "${BREW_SYNC_CHECK_SNAPSHOT:-}" ] && rm "$BREW_SYNC_CHECK_SNAPSHOT"
 
   exit $status
 }
@@ -63,7 +65,7 @@ require_file() {
   fi
 }
 
-require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$SCRIPT"
+require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$SCRIPT" "$BREW_SYNC_CHECK"
 
 file_snapshot() {
   local file="$1"
@@ -165,6 +167,9 @@ echo "🛠️ [Execution]"
 echo "────────────────"
 echo "Running shellcheck on '${SCRIPT}' (linting)..."
 shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE=1
+
+echo "Running shellcheck on '${BREW_SYNC_CHECK}' (linting)..."
+shellcheck "$BREW_SYNC_CHECK" || SHELLCHECK_EXIT_CODE=1
 echo
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━┓"
@@ -177,6 +182,7 @@ echo "shfmt version: $(shfmt --version)"
 echo
 
 SCRIPT_SNAPSHOT="$(file_snapshot "$SCRIPT" ".lint.sh")"
+BREW_SYNC_CHECK_SNAPSHOT="$(file_snapshot "$BREW_SYNC_CHECK" ".brew_sync_check.sh")"
 
 echo "🛠️ [Execution]"
 echo "────────────────"
@@ -184,8 +190,13 @@ echo "Running shfmt on '${SCRIPT}' (applying formatting)..."
 shfmt -i 2 -ci -s --diff "$SCRIPT" >/dev/null 2>&1 || SHFMT_EXIT_CODE=1
 shfmt -i 2 -ci -s --write "$SCRIPT"
 echo
-
 git_diff "$SCRIPT_SNAPSHOT" "$SCRIPT" "$SHFMT_EXIT_CODE"
+
+echo "Running shfmt on '${BREW_SYNC_CHECK}' (applying formatting)..."
+shfmt -i 2 -ci -s --diff "$BREW_SYNC_CHECK" >/dev/null 2>&1 || SHFMT_EXIT_CODE=1
+shfmt -i 2 -ci -s --write "$BREW_SYNC_CHECK"
+echo
+git_diff "$BREW_SYNC_CHECK_SNAPSHOT" "$BREW_SYNC_CHECK" "$SHFMT_EXIT_CODE"
 
 echo "┏━━━━━━━━━━━┓"
 echo "┃  SUMMARY  ┃"
