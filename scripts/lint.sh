@@ -7,6 +7,26 @@ set -u
 BREWFILE="dot_Brewfile"
 NIX_FLAKE_FILE="flake.nix"
 
+cleanup() {
+  # Exit with the status of the command that triggered this trap.
+  local status=$?
+
+  [ -f "$ORIGINAL_BREWFILE" ] && rm "$ORIGINAL_BREWFILE"
+  [ -f "$ORIGINAL_NIX_FLAKE_FILE" ] && rm "$ORIGINAL_NIX_FLAKE_FILE"
+
+  exit $status
+}
+
+setup_signal_handling() {
+    # Handle process interruption signals.
+    trap cleanup SIGINT SIGTERM
+
+    # Handle the EXIT signal for any script termination.
+    trap cleanup EXIT
+}
+
+setup_signal_handling
+
 # Ensure this script runs from the project root.
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "${PROJECT_ROOT:-}" ]; then
@@ -56,7 +76,6 @@ if [ $RUBOCOP_EXIT_CODE -eq 1 ]; then
   GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$ORIGINAL_BREWFILE" "$BREWFILE"
   echo
 fi
-rm "$ORIGINAL_BREWFILE"
 
 check_file "$NIX_FLAKE_FILE"
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
@@ -84,7 +103,6 @@ if [ $NIXFMT_EXIT_CODE -eq 1 ]; then
   GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$ORIGINAL_NIX_FLAKE_FILE" "$NIX_FLAKE_FILE"
   echo
 fi
-rm "$ORIGINAL_NIX_FLAKE_FILE"
 
 echo "┏━━━━━━━━━━━┓"
 echo "┃  SUMMARY  ┃"
