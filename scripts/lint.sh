@@ -94,25 +94,6 @@ MDFORMAT_EXIT_CODE=0
 SHELLCHECK_EXIT_CODE=0
 SHFMT_EXIT_CODE=0
 
-echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
-echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
-echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
-echo "📌 [Info]"
-echo "───────────"
-echo "RuboCop path: $(bundle exec command -v rubocop)"
-echo "RuboCop version: $(bundle exec rubocop -v)"
-echo
-
-BREWFILE_SNAPSHOT="$(file_snapshot "$BREWFILE" ".brewfile")"
-
-echo "🛠️ [Execution]"
-echo "────────────────"
-echo "Running RuboCop on '${BREWFILE}' (linting, formatting, and applying corrections)..."
-bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
-echo
-
-git_diff "$BREWFILE_SNAPSHOT" "$BREWFILE" "$RUBOCOP_EXIT_CODE"
-
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  NIXFMT (FORMATTING)  ┃"
 echo "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
@@ -131,6 +112,25 @@ nix fmt -- --ci --quiet "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
 echo
 
 git_diff "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE" "$NIXFMT_EXIT_CODE"
+
+echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
+echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+echo "📌 [Info]"
+echo "───────────"
+echo "RuboCop path: $(bundle exec command -v rubocop)"
+echo "RuboCop version: $(bundle exec rubocop -v)"
+echo
+
+BREWFILE_SNAPSHOT="$(file_snapshot "$BREWFILE" ".brewfile")"
+
+echo "🛠️ [Execution]"
+echo "────────────────"
+echo "Running RuboCop on '${BREWFILE}' (linting, formatting, and applying corrections)..."
+bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
+echo
+
+git_diff "$BREWFILE_SNAPSHOT" "$BREWFILE" "$RUBOCOP_EXIT_CODE"
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  MDFORMAT (FORMATTING)  ┃"
@@ -193,10 +193,10 @@ echo "┗━━━━━━━━━━━┛"
 echo
 
 TOOL_STATUSES=(
+  "Nixfmt:$NIXFMT_EXIT_CODE"
   "RuboCop:$RUBOCOP_EXIT_CODE"
-  "nixfmt:$NIXFMT_EXIT_CODE"
-  "mdformat:$MDFORMAT_EXIT_CODE"
-  "shellcheck:$SHELLCHECK_EXIT_CODE"
+  "Mdformat:$MDFORMAT_EXIT_CODE"
+  "Shellcheck:$SHELLCHECK_EXIT_CODE"
   "shfmt:$SHFMT_EXIT_CODE"
 )
 
