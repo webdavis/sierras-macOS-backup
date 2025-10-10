@@ -49,7 +49,6 @@
           # are installed into the project-local './vendor/bundle' directory, but we enforce it
           # here as a fail-safe.
           shellHook = ''
-            echo
             bundle config set path 'vendor/bundle'
 
             if [ ! -d vendor/bundle ] || ! bundle check > /dev/null 2>&1; then
@@ -76,13 +75,18 @@
             projectName="$(basename "$PWD")"
 
             echo -e "''${blue}Entering Brewfile linting environment...''${reset}\n"
+
             echo -e "''${bold}Project:''${reset} ''${green}''${projectName}''${reset}"
+
+            echo -e "''${bold}Nix version:''${reset} ''${red}$(nix --version | cut -d' ' -f2-)''${reset}"
+            echo -e "''${bold}Nix fmt version:''${reset} ''${red}$(nix fmt -- --version)''${reset}"
+
             echo -e "''${bold}Ruby version:''${reset} ''${red}${pkgs.ruby_3_4.version}''${reset}"
             echo -e "''${bold}Rubocop version:''${reset} ''${red}$(bundle exec rubocop -v)''${reset}"
-            echo -e "''${bold}Nix version:''${reset} ''${red}$(nix --version)''${reset}"
-            echo -e "''${bold}Nix fmt version:''${reset} ''${red}$(nix fmt -- --version)''${reset}"
-            echo -e "''${bold}Python version:''${reset} ''${red}$(python --version)''${reset}"
-            echo -e "''${bold}mdformat version:''${reset} ''${red}$(mdformat --version)''${reset}"
+
+            echo -e "''${bold}Python version:''${reset} ''${red}$(python --version | awk '{print $2}')''${reset}"
+            echo -e "''${bold}mdformat version:''${reset} ''${red}$(mdformat --version | cut -d' ' -f2-)''${reset}"
+
             echo -e "''${bold}Bash version:''${reset} ''${red}$(bash --version | head -n 1)''${reset}"
             echo -e "''${bold}shellcheck version:''${reset} ''${red}$(shellcheck --version | awk '/^version:/ {print $2}')''${reset}"
             echo -e "''${bold}shfmt version:''${reset} ''${red}$(shfmt --version)''${reset}"
