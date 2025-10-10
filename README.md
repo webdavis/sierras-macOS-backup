@@ -86,13 +86,13 @@ bundle exec rubocop dot_Brewfile
 Run a single command in a temporary environment without entering the shell:
 
 ```bash
-nix develop .#adhoc --command bundle exec rubocop dot_Brewfile
+nix develop .#adhoc --command ./scripts/lint.sh
 ```
 
 > [!TIP]
 >
-> Replace `bundle exec rubocop dot_Brewfile` with any other command you want to run in the
-> development environment.
+> You can replace `./scripts/lint.sh` with any command you want to execute inside the
+> development environment (e.g. `bundle exec rubocop dot_Brewfile`).
 
 ### Moving Forward...
 
