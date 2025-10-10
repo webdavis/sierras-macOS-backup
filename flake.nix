@@ -67,6 +67,8 @@
             echo -e "''${bold}Project:''${reset} ''${green}''${projectName}''${reset}"
             echo -e "''${bold}Ruby version:''${reset} ''${red}${pkgs.ruby_3_4.version}''${reset}"
             echo -e "''${bold}Rubocop version:''${reset} ''${red}$(bundle exec rubocop -v)''${reset}"
+            echo -e "''${bold}Nix version:''${reset} ''${red}$(nix --version)''${reset}"
+            echo -e "''${bold}Nix fmt version:''${reset} ''${red}$(nix fmt -- --version)''${reset}"
           '';
         };
       in
