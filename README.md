@@ -6,7 +6,7 @@ This repo automates the configuration of Sierra's personal macOS setup.
 
 ## Computer Specs
 
-*As of October 8, 2025*
+As of *October 8, 2025*
 
 | Specification | Details                            |
 | ------------- | ---------------------------------- |
