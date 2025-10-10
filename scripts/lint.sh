@@ -61,6 +61,8 @@ require_file() {
   fi
 }
 
+require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README"
+
 file_snapshot() {
   local file="$1"
   local file_suffix="$2"
@@ -83,8 +85,6 @@ git_diff() {
     echo
   fi
 }
-
-require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README"
 
 RUBOCOP_EXIT_CODE=0
 NIXFMT_EXIT_CODE=0
