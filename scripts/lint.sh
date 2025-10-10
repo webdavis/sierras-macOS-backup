@@ -42,7 +42,7 @@ echo
 
 echo "🛠️ [Execution]"
 echo "Running RuboCop on '${BREWFILE}' (linting, formatting, and applying corrections)..."
-bundle exec rubocop --display-time --autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
+bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
 echo
 
 check_file "$NIX_FLAKE_FILE"
