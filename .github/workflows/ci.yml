@@ -1,0 +1,28 @@
+name: CI - Install Homebrew CLI Tools
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Manually Install Homebrew
+        run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+      - name: Verify Homebrew
+        run: |
+          export PATH="/opt/homebrew/bin:$PATH"
+          echo "Brew path: $(which brew)"
+          echo "Brew version: $(brew --version)"
+
+      - name: Create a temporary Brewfile containing only formulae
+        run: grep --color=never -E '^brew ' dot_Brewfile > Brewfile.formulae
+
+      - name: Install formulae
+        run: |
+          export PATH="/opt/homebrew/bin:$PATH"
+          brew bundle --file=Brewfile.formulae
