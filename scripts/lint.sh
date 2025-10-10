@@ -39,19 +39,31 @@ if ! cd "$PROJECT_ROOT"; then
   exit 1
 fi
 
-check_file() {
-  local file="$1"
+require_file() {
+  local files=("$@")
+  local missing_files=()
 
-  if [ ! -f "$file" ]; then
-    echo "Error: '$file' is missing in the project root (${PROJECT_ROOT##*/}). Linting aborted." >&2
+  local file
+  for file in "${files[@]}"; do
+    if [ ! -f "$file" ]; then
+      missing_files+=("$file")
+    fi
+  done
+
+  if (( ${#missing_files[@]} )); then
+    local msg="Error: The following required file(s) are missing in the project root (${PROJECT_ROOT##*/}): "
+    msg+="${missing_files[*]}. Linting & formatting aborted."
+
+    echo "$msg" >&2
     exit 1
   fi
 }
 
+require_file "$BREWFILE" "$NIX_FLAKE_FILE"
+
 RUBOCOP_EXIT_CODE=0
 NIXFMT_EXIT_CODE=0
 
-check_file "$BREWFILE"
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
 echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
@@ -77,7 +89,6 @@ if [ $RUBOCOP_EXIT_CODE -eq 1 ]; then
   echo
 fi
 
-check_file "$NIX_FLAKE_FILE"
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  NIXFMT (FORMATTING)  ┃"
 echo "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
