@@ -11,8 +11,8 @@ cleanup() {
   # Exit with the status of the command that triggered this trap.
   local status=$?
 
-  [ -f "$BREWFILE_SNAPSHOT" ] && rm "$BREWFILE_SNAPSHOT"
-  [ -f "$NIX_FLAKE_FILE_SNAPSHOT" ] && rm "$NIX_FLAKE_FILE_SNAPSHOT"
+  [ -f "${BREWFILE_SNAPSHOT:-}" ] && rm "$BREWFILE_SNAPSHOT"
+  [ -f "${NIX_FLAKE_FILE_SNAPSHOT:-}" ] && rm "$NIX_FLAKE_FILE_SNAPSHOT"
 
   exit $status
 }
