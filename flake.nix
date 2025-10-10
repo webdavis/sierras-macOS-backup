@@ -41,6 +41,7 @@
                 mdformat-gfm
               ]
             ))
+            pkgs.shellcheck
           ];
 
           # Note: This project already tracks the ./bundle/config file, which the ensures that gems
@@ -77,6 +78,8 @@
             echo -e "''${bold}Nix fmt version:''${reset} ''${red}$(nix fmt -- --version)''${reset}"
             echo -e "''${bold}Python version:''${reset} ''${red}$(python --version)''${reset}"
             echo -e "''${bold}mdformat version:''${reset} ''${red}$(mdformat --version)''${reset}"
+            echo -e "''${bold}Bash version:''${reset} ''${red}$(bash --version | head -n 1)''${reset}"
+            echo -e "''${bold}shellcheck version:''${reset} ''${red}$(shellcheck --version | awk '/^version:/ {print $2}')''${reset}"
           '';
         };
       in

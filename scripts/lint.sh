@@ -7,6 +7,7 @@ set -u
 BREWFILE="dot_Brewfile"
 NIX_FLAKE_FILE="flake.nix"
 README="README.md"
+SCRIPT="scripts/lint.sh"
 
 cleanup() {
   # Exit with the status of the command that triggered this trap.
@@ -15,6 +16,7 @@ cleanup() {
   [ -f "${BREWFILE_SNAPSHOT:-}" ] && rm "$BREWFILE_SNAPSHOT"
   [ -f "${NIX_FLAKE_FILE_SNAPSHOT:-}" ] && rm "$NIX_FLAKE_FILE_SNAPSHOT"
   [ -f "${README_SNAPSHOT:-}" ] && rm "$README_SNAPSHOT"
+  [ -f "${SCRIPT_SNAPSHOT:-}" ] && rm "$SCRIPT_SNAPSHOT"
 
   exit $status
 }
@@ -89,6 +91,7 @@ git_diff() {
 RUBOCOP_EXIT_CODE=0
 NIXFMT_EXIT_CODE=0
 MDFORMAT_EXIT_CODE=0
+SHELLCHECK_EXIT_CODE=0
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
@@ -148,6 +151,21 @@ echo
 
 git_diff "$README_SNAPSHOT" "$README" "$MDFORMAT_EXIT_CODE"
 
+echo "┏━━━━━━━━━━━━━━━━━━━━━━━━┓"
+echo "┃  SHELLCHECK (LINTING)  ┃"
+echo "┗━━━━━━━━━━━━━━━━━━━━━━━━┛"
+echo "📌 [Info]"
+echo "───────────"
+echo "shellcheck path: $(command -v shellcheck)"
+echo "shellcheck version: $(shellcheck --version | awk '/^version:/ {print $2}')"
+echo
+
+echo "🛠️ [Execution]"
+echo "────────────────"
+echo "Running shellcheck on '${SCRIPT}' (linting)..."
+shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE=1
+echo
+
 echo "┏━━━━━━━━━━━┓"
 echo "┃  SUMMARY  ┃"
 echo "┗━━━━━━━━━━━┛"
@@ -157,6 +175,7 @@ TOOL_STATUSES=(
   "RuboCop:$RUBOCOP_EXIT_CODE"
   "nixfmt:$NIXFMT_EXIT_CODE"
   "mdformat:$MDFORMAT_EXIT_CODE"
+  "shellcheck:$SHELLCHECK_EXIT_CODE"
 )
 
 EXIT_CODE=0

@@ -1,0 +1,2 @@
+# Ignore warnings about sourcing files outside the repo.
+disable=SC1090,SC1091
