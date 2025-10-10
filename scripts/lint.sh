@@ -24,6 +24,9 @@ RUBOCOP_EXIT_CODE=0
 NIXFMT_EXIT_CODE=0
 
 check_file "$BREWFILE"
+echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
+echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
 echo "RuboCop path: $(bundle exec which rubocop)"
 echo "RuboCop version: $(bundle exec rubocop -v)"
 echo "Linting '${BREWFILE}' with RuboCop..."
@@ -31,6 +34,9 @@ bundle exec rubocop --display-time -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
 echo
 
 check_file "$NIX_FLAKE_FILE"
+echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
+echo "┃  NIXFMT (FORMATTING)  ┃"
+echo "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
 echo "nixfmt path: $(which treefmt)"
 echo "nixfmt version: $(nix fmt -- --version)"
 echo "Formatting '${NIX_FLAKE_FILE}' with nixfmt..."
