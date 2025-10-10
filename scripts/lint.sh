@@ -49,7 +49,7 @@ echo
 echo "🛠️ [Execution]"
 echo "Formatting '${NIX_FLAKE_FILE}' with nixfmt..."
 echo "Running nix fmt '${NIX_FLAKE_FILE}' (applying formatting)..."
-nix fmt -- --ci "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
+nix fmt -- --ci --quiet "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
 echo
 
 {
