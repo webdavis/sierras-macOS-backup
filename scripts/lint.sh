@@ -69,7 +69,7 @@ echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
 echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
 echo "📌 [Info]"
 echo "───────────"
-echo "RuboCop path: $(bundle exec which rubocop)"
+echo "RuboCop path: $(bundle exec command -v rubocop)"
 echo "RuboCop version: $(bundle exec rubocop -v)"
 echo
 
@@ -94,7 +94,7 @@ echo "┃  NIXFMT (FORMATTING)  ┃"
 echo "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
 echo "📌 [Info]"
 echo "───────────"
-echo "nixfmt path: $(which treefmt)"
+echo "nixfmt path: $(command -v treefmt)"
 echo "nixfmt version: $(nix fmt -- --version)"
 echo
 
