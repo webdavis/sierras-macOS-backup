@@ -6,6 +6,7 @@ set -u
 # Target files:
 BREWFILE="dot_Brewfile"
 NIX_FLAKE_FILE="flake.nix"
+README="README.md"
 
 cleanup() {
   # Exit with the status of the command that triggered this trap.
@@ -13,6 +14,7 @@ cleanup() {
 
   [ -f "${BREWFILE_SNAPSHOT:-}" ] && rm "$BREWFILE_SNAPSHOT"
   [ -f "${NIX_FLAKE_FILE_SNAPSHOT:-}" ] && rm "$NIX_FLAKE_FILE_SNAPSHOT"
+  [ -f "${README_SNAPSHOT:-}" ] && rm "$README_SNAPSHOT"
 
   exit $status
 }
@@ -82,10 +84,11 @@ git_diff() {
   fi
 }
 
-require_file "$BREWFILE" "$NIX_FLAKE_FILE"
+require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README"
 
 RUBOCOP_EXIT_CODE=0
 NIXFMT_EXIT_CODE=0
+MDFORMAT_EXIT_CODE=0
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
@@ -125,6 +128,26 @@ echo
 
 git_diff "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE" "$NIXFMT_EXIT_CODE"
 
+echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+echo "┃  MDFORMAT (FORMATTING)  ┃"
+echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+echo "📌 [Info]"
+echo "───────────"
+echo "mdformat path: $(command -v mdformat)"
+echo "mdformat version: $(mdformat --version)"
+echo
+
+README_SNAPSHOT="$(file_snapshot "$README" ".readme.md")"
+
+echo "🛠️ [Execution]"
+echo "────────────────"
+echo "Running mdformat on '${README}' (applying formatting)..."
+mdformat --check "$README" || MDFORMAT_EXIT_CODE=1
+mdformat "$README"
+echo
+
+git_diff "$README_SNAPSHOT" "$README" "$MDFORMAT_EXIT_CODE"
+
 echo "┏━━━━━━━━━━━┓"
 echo "┃  SUMMARY  ┃"
 echo "┗━━━━━━━━━━━┛"
@@ -133,6 +156,7 @@ echo
 TOOL_STATUSES=(
   "RuboCop:$RUBOCOP_EXIT_CODE"
   "nixfmt:$NIXFMT_EXIT_CODE"
+  "mdformat:$MDFORMAT_EXIT_CODE"
 )
 
 EXIT_CODE=0

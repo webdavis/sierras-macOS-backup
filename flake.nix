@@ -35,6 +35,12 @@
           buildInputs = [
             pkgs.ruby_3_4 # This comes with Bundler included.
             nixfmt
+            (pkgs.python312.withPackages (
+              ps: with ps; [
+                mdformat
+                mdformat-gfm
+              ]
+            ))
           ];
 
           # Note: This project already tracks the ./bundle/config file, which the ensures that gems
@@ -69,6 +75,8 @@
             echo -e "''${bold}Rubocop version:''${reset} ''${red}$(bundle exec rubocop -v)''${reset}"
             echo -e "''${bold}Nix version:''${reset} ''${red}$(nix --version)''${reset}"
             echo -e "''${bold}Nix fmt version:''${reset} ''${red}$(nix fmt -- --version)''${reset}"
+            echo -e "''${bold}Python version:''${reset} ''${red}$(python --version)''${reset}"
+            echo -e "''${bold}mdformat version:''${reset} ''${red}$(mdformat --version)''${reset}"
           '';
         };
       in

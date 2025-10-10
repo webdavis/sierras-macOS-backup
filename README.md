@@ -34,7 +34,7 @@ To use these dotfiles:
    brew install chezmoi
    ```
 
-2. **Initialize Chezmoi with this repository**
+1. **Initialize Chezmoi with this repository**
 
    ```bash
    chezmoi init --apply https://github.com/webdavis/sierras-macOS-backup.git
@@ -56,6 +56,7 @@ curl -fsSL https://install.determinate.systems/nix | sh -s -- install
 ```
 
 > [!IMPORTANT]
+>
 > If you're on macOS and using [nix-darwin](https://github.com/nix-darwin/nix-darwin), when
 > prompted with `Install Determinate Nix?`, say `no`
 >
@@ -89,6 +90,7 @@ nix develop .#adhoc --command bundle exec rubocop dot_Brewfile
 ```
 
 > [!TIP]
+>
 > Replace `bundle exec rubocop dot_Brewfile` with any other command you want to run in the
 > development environment.
 
