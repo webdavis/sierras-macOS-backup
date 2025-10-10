@@ -27,9 +27,13 @@ check_file "$BREWFILE"
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
 echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+echo "📌 [Info]"
 echo "RuboCop path: $(bundle exec which rubocop)"
 echo "RuboCop version: $(bundle exec rubocop -v)"
-echo "Linting '${BREWFILE}' with RuboCop..."
+echo
+
+echo "🛠️ [Execution]"
+echo "Running RuboCop on '${BREWFILE}' (linting, formatting, and applying corrections)..."
 bundle exec rubocop --display-time --autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
 echo
 
@@ -37,15 +41,20 @@ check_file "$NIX_FLAKE_FILE"
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  NIXFMT (FORMATTING)  ┃"
 echo "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
+echo "📌 [Info]"
 echo "nixfmt path: $(which treefmt)"
 echo "nixfmt version: $(nix fmt -- --version)"
+echo
+
+echo "🛠️ [Execution]"
 echo "Formatting '${NIX_FLAKE_FILE}' with nixfmt..."
+echo "Running nix fmt '${NIX_FLAKE_FILE}' (applying formatting)..."
 nix fmt -- --ci "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
 echo
 
 {
   echo -e "Tool\tStatus"
-  echo -e "-------\t-----"
+  echo -e "-------\t-------"
   for tool in "RuboCop:$RUBOCOP_EXIT_CODE" "nixfmt:$NIXFMT_EXIT_CODE"; do
     IFS=":" read -r name code <<< "$tool"
     if [ "$code" -eq 0 ]; then
