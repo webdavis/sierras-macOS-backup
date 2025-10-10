@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Exit immediately if any command fails, or if any variables are unset.
-set -eu
+# Exit immediately if any variables are unset.
+set -u
 
 # Target files:
 BREWFILE="dot_Brewfile"
@@ -20,16 +20,36 @@ check_file() {
   fi
 }
 
+RUBOCOP_EXIT_CODE=0
+NIXFMT_EXIT_CODE=0
+
 check_file "$BREWFILE"
 echo "RuboCop path: $(bundle exec which rubocop)"
 echo "RuboCop version: $(bundle exec rubocop -v)"
 echo "Linting '${BREWFILE}' with RuboCop..."
-bundle exec rubocop --display-time -- "$BREWFILE"
+bundle exec rubocop --display-time -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
 echo
 
 check_file "$NIX_FLAKE_FILE"
-echo "nix fmt path: $(which treefmt)"
-echo "nix fmt version: $(nix fmt -- --version)"
-echo "Linting '${NIX_FLAKE_FILE}' with nix fmt..."
-nix fmt -- --verbose "$NIX_FLAKE_FILE"
+echo "nixfmt path: $(which treefmt)"
+echo "nixfmt version: $(nix fmt -- --version)"
+echo "Formatting '${NIX_FLAKE_FILE}' with nixfmt..."
+nix fmt -- --ci "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
 echo
+
+{
+  echo -e "Tool\tStatus"
+  echo -e "-------\t-----"
+  for tool in "RuboCop:$RUBOCOP_EXIT_CODE" "nixfmt:$NIXFMT_EXIT_CODE"; do
+    IFS=":" read -r name code <<< "$tool"
+    if [ "$code" -eq 0 ]; then
+      echo -e "$name\t✅"
+    else
+      echo -e "$name\t❌"
+    fi
+  done
+} | column -t
+
+if [ $RUBOCOP_EXIT_CODE -ne 0 ] || [ $NIXFMT_EXIT_CODE -ne 0 ]; then
+  exit 1
+fi
