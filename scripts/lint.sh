@@ -11,8 +11,8 @@ cleanup() {
   # Exit with the status of the command that triggered this trap.
   local status=$?
 
-  [ -f "$ORIGINAL_BREWFILE" ] && rm "$ORIGINAL_BREWFILE"
-  [ -f "$ORIGINAL_NIX_FLAKE_FILE" ] && rm "$ORIGINAL_NIX_FLAKE_FILE"
+  [ -f "$BREWFILE_SNAPSHOT" ] && rm "$BREWFILE_SNAPSHOT"
+  [ -f "$NIX_FLAKE_FILE_SNAPSHOT" ] && rm "$NIX_FLAKE_FILE_SNAPSHOT"
 
   exit $status
 }
@@ -61,8 +61,8 @@ echo "RuboCop path: $(bundle exec which rubocop)"
 echo "RuboCop version: $(bundle exec rubocop -v)"
 echo
 
-ORIGINAL_BREWFILE="$(mktemp -p "$PROJECT_ROOT" tmp.brewfile.XXXXXX)"
-cp "$BREWFILE" "$ORIGINAL_BREWFILE"
+BREWFILE_SNAPSHOT="$(mktemp -p "$PROJECT_ROOT" --suffix ".brewfile")"
+cp "$BREWFILE" "$BREWFILE_SNAPSHOT"
 
 echo "🛠️ [Execution]"
 echo "────────────────"
@@ -73,7 +73,7 @@ echo
 if [ $RUBOCOP_EXIT_CODE -eq 1 ]; then
   echo "📝 [Diff]"
   echo "───────────"
-  GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$ORIGINAL_BREWFILE" "$BREWFILE"
+  GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$BREWFILE_SNAPSHOT" "$BREWFILE"
   echo
 fi
 
@@ -87,8 +87,8 @@ echo "nixfmt path: $(which treefmt)"
 echo "nixfmt version: $(nix fmt -- --version)"
 echo
 
-ORIGINAL_NIX_FLAKE_FILE="$(mktemp -p "$PROJECT_ROOT" tmp.flake.XXXXXX.nix)"
-cp "$NIX_FLAKE_FILE" "$ORIGINAL_NIX_FLAKE_FILE"
+NIX_FLAKE_FILE_SNAPSHOT="$(mktemp -p "$PROJECT_ROOT" --suffix '.flake.nix')"
+cp "$NIX_FLAKE_FILE" "$NIX_FLAKE_FILE_SNAPSHOT"
 
 echo "🛠️ [Execution]"
 echo "────────────────"
@@ -100,7 +100,7 @@ echo
 if [ $NIXFMT_EXIT_CODE -eq 1 ]; then
   echo "📝 [Diff]"
   echo "───────────"
-  GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$ORIGINAL_NIX_FLAKE_FILE" "$NIX_FLAKE_FILE"
+  GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE"
   echo
 fi
 
