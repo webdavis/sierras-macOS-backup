@@ -119,8 +119,7 @@ NIX_FLAKE_FILE_SNAPSHOT="$(file_snapshot "$NIX_FLAKE_FILE" ".flake.nix")"
 
 echo "🛠️ [Execution]"
 echo "────────────────"
-echo "Formatting '${NIX_FLAKE_FILE}' with nixfmt..."
-echo "Running nix fmt '${NIX_FLAKE_FILE}' (applying formatting)..."
+echo "Running nix fmt on '${NIX_FLAKE_FILE}' (applying formatting)..."
 nix fmt -- --ci --quiet "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
 echo
 
