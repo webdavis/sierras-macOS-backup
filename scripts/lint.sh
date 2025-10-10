@@ -9,7 +9,15 @@ NIX_FLAKE_FILE="flake.nix"
 
 # Ensure this script runs from the project root.
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-cd "$PROJECT_ROOT"
+if [ -z "${PROJECT_ROOT:-}" ]; then
+  echo "Error: could not determine project root directory (are you in a Git repository?)" >&2
+  exit 1
+fi
+
+if ! cd "$PROJECT_ROOT"; then
+  echo "Error: could not change into project root directory (${PROJECT_ROOT})" >&2
+  exit 1
+fi
 
 check_file() {
   local file="$1"
