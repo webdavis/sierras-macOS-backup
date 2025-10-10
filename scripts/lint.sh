@@ -59,6 +59,16 @@ require_file() {
   fi
 }
 
+file_snapshot() {
+  local file="$1"
+  local file_suffix="$2"
+  local snapshot
+  snapshot="$(mktemp -p "$PROJECT_ROOT" --suffix "$file_suffix")"
+  cp "$file" "$snapshot"
+
+  echo "$snapshot"
+}
+
 require_file "$BREWFILE" "$NIX_FLAKE_FILE"
 
 RUBOCOP_EXIT_CODE=0
@@ -73,8 +83,7 @@ echo "RuboCop path: $(bundle exec command -v rubocop)"
 echo "RuboCop version: $(bundle exec rubocop -v)"
 echo
 
-BREWFILE_SNAPSHOT="$(mktemp -p "$PROJECT_ROOT" --suffix ".brewfile")"
-cp "$BREWFILE" "$BREWFILE_SNAPSHOT"
+BREWFILE_SNAPSHOT="$(file_snapshot "$BREWFILE" ".brewfile")"
 
 echo "🛠️ [Execution]"
 echo "────────────────"
@@ -98,8 +107,7 @@ echo "nixfmt path: $(command -v treefmt)"
 echo "nixfmt version: $(nix fmt -- --version)"
 echo
 
-NIX_FLAKE_FILE_SNAPSHOT="$(mktemp -p "$PROJECT_ROOT" --suffix '.flake.nix')"
-cp "$NIX_FLAKE_FILE" "$NIX_FLAKE_FILE_SNAPSHOT"
+NIX_FLAKE_FILE_SNAPSHOT="$(file_snapshot "$NIX_FLAKE_FILE" ".flake.nix")"
 
 echo "🛠️ [Execution]"
 echo "────────────────"
