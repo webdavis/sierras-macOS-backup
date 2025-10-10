@@ -41,8 +41,8 @@ echo "RuboCop path: $(bundle exec which rubocop)"
 echo "RuboCop version: $(bundle exec rubocop -v)"
 echo
 
-original_brewfile="$(mktemp -p "$PROJECT_ROOT" tmp.brewfile.XXXXXX)"
-cp "$BREWFILE" "$original_brewfile"
+ORIGINAL_BREWFILE="$(mktemp -p "$PROJECT_ROOT" tmp.brewfile.XXXXXX)"
+cp "$BREWFILE" "$ORIGINAL_BREWFILE"
 
 echo "🛠️ [Execution]"
 echo "────────────────"
@@ -53,10 +53,10 @@ echo
 if [ $RUBOCOP_EXIT_CODE -eq 1 ]; then
   echo "📝 [Diff]"
   echo "───────────"
-  GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$original_brewfile" "$BREWFILE"
+  GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$ORIGINAL_BREWFILE" "$BREWFILE"
   echo
 fi
-rm "$original_brewfile"
+rm "$ORIGINAL_BREWFILE"
 
 check_file "$NIX_FLAKE_FILE"
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
@@ -68,8 +68,8 @@ echo "nixfmt path: $(which treefmt)"
 echo "nixfmt version: $(nix fmt -- --version)"
 echo
 
-original_nix_flake_file="$(mktemp -p "$PROJECT_ROOT" tmp.flake.XXXXXX.nix)"
-cp "$NIX_FLAKE_FILE" "$original_nix_flake_file"
+ORIGINAL_NIX_FLAKE_FILE="$(mktemp -p "$PROJECT_ROOT" tmp.flake.XXXXXX.nix)"
+cp "$NIX_FLAKE_FILE" "$ORIGINAL_NIX_FLAKE_FILE"
 
 echo "🛠️ [Execution]"
 echo "────────────────"
@@ -81,10 +81,10 @@ echo
 if [ $NIXFMT_EXIT_CODE -eq 1 ]; then
   echo "📝 [Diff]"
   echo "───────────"
-  GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$original_nix_flake_file" "$NIX_FLAKE_FILE"
+  GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$ORIGINAL_NIX_FLAKE_FILE" "$NIX_FLAKE_FILE"
   echo
 fi
-rm "$original_nix_flake_file"
+rm "$ORIGINAL_NIX_FLAKE_FILE"
 
 echo "┏━━━━━━━━━━━┓"
 echo "┃  SUMMARY  ┃"
