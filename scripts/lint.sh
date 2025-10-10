@@ -30,7 +30,7 @@ echo "┗━━━━━━━━━━━━━━━━━━━━━━━�
 echo "RuboCop path: $(bundle exec which rubocop)"
 echo "RuboCop version: $(bundle exec rubocop -v)"
 echo "Linting '${BREWFILE}' with RuboCop..."
-bundle exec rubocop --display-time -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
+bundle exec rubocop --display-time --autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
 echo
 
 check_file "$NIX_FLAKE_FILE"
