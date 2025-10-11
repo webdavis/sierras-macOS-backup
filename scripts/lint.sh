@@ -57,10 +57,10 @@ require_file() {
   done
 
   if ((${#missing_files[@]})); then
-    local msg="Error: The following required file(s) are missing in the project root (${PROJECT_ROOT##*/}): "
-    msg+="${missing_files[*]}. Linting & formatting aborted."
+    local message="Error: The following required file(s) are missing in the project root (${PROJECT_ROOT##*/}): "
+    message+="${missing_files[*]}. Linting & formatting aborted."
 
-    echo "$msg" >&2
+    echo "$message" >&2
     exit 1
   fi
 }
