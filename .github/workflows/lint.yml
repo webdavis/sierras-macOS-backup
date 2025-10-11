@@ -16,4 +16,4 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
 
       - name: Lint project files
-        run: nix develop .#adhoc --command ./scripts/lint.sh
+        run: nix develop .#adhoc --command ./scripts/lint.sh --ci

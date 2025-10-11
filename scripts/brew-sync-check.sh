@@ -23,7 +23,6 @@ promoted_system_leaves_command() {
   printf '%s\n' "${system_leaves[@]}" "${brewfile_dependencies[@]}" | sort -u
 }
 
-
 # Wrapper functions
 # ——————————————————
 comm_wrapper() {
@@ -41,7 +40,7 @@ mapfile_wrapper() {
   local runner="$2"
   shift 2 # Remove the first two args: the target_array (name) and the runner.
 
-  if [[ "$runner" == "comm_wrapper" ]]; then
+  if [[ $runner == "comm_wrapper" ]]; then
     mapfile -t target_array < <(comm_wrapper "$@")
   else
     mapfile -t target_array < <("$@")
@@ -53,7 +52,7 @@ mapfile_wrapper() {
 set_and_verify_brewfile() {
   BREWFILE="${1:-$HOME/.Brewfile}"
 
-  if [[ ! -f "$BREWFILE" ]]; then
+  if [[ ! -f $BREWFILE ]]; then
     printf "Brewfile not found: %s\n" "$BREWFILE" >&2
     exit 1
   fi
@@ -132,7 +131,7 @@ print_diff_columns() {
   print_row "----------------" "--------------"
 
   # Print each row
-  for ((i=0; i<max_length; i++)); do
+  for ((i = 0; i < max_length; i++)); do
     print_row "${c1[i]:-}" "${c2[i]:-}"
   done
 

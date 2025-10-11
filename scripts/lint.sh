@@ -10,6 +10,10 @@ README="README.md"
 SCRIPT="scripts/lint.sh"
 BREW_SYNC_CHECK="scripts/brew-sync-check.sh"
 
+# Colors:
+RED='\033[0;31m'
+RESET='\033[0m' # No Color
+
 cleanup() {
   # Exit with the status of the command that triggered this trap.
   local status=$?
@@ -32,6 +36,29 @@ setup_signal_handling() {
 }
 
 setup_signal_handling
+
+CI_MODE=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --ci)
+      CI_MODE=true
+      shift
+      ;;
+    --) # End of options.
+      shift
+      break
+      ;;
+    -*)
+      echo "Error: invalid option '$1'" >&2
+      exit 1
+      ;;
+    *)
+      # Positional argument.
+      break
+      ;;
+  esac
+done
 
 # Ensure this script runs from the project root.
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
@@ -80,21 +107,49 @@ file_snapshot() {
 git_diff() {
   local snapshot="$1"
   local file="$2"
-  local tool_status="$3"
+
+  GIT_CONFIG_GLOBAL=/dev/null git diff --color=always --unified=0 --no-index "$snapshot" "$file"
+}
+
+git_diff_section() {
+  local snapshot="$1"
+  local file="$2"
+  local tool="$3"
+  local tool_status="$4"
 
   if [ "$tool_status" -eq 1 ]; then
-    echo "📝 [Diff]"
-    echo "───────────"
-    GIT_CONFIG_GLOBAL=/dev/null git diff --unified=0 --no-index "$snapshot" "$file"
-    echo
+    if $CI_MODE; then
+      echo "::error file=${file}::${tool}: detected formatting/linting issues in ${file}. See diff below ↓"
+
+      echo "::group::📝 [Diff] → '${file}'"
+      git_diff "$snapshot" "$file" || true
+      echo "::endgroup::"
+    else
+      echo -e "${RED}Error: ${file} has formatting/linting issues. See diff below ↓${RESET}"
+      echo "📝 [Diff] → '${file}'"
+      echo "─────────────────────────────"
+      git_diff "$snapshot" "$file"
+      echo
+    fi
   fi
+}
+
+trim() {
+  local var="$1"
+
+  var="${var#"${var%%[![:space:]]*}"}" # Remove leading whitespace.
+  var="${var%"${var##*[![:space:]]}"}" # Remove trailing whitespace.
+
+  printf '%s' "$var"
 }
 
 RUBOCOP_EXIT_CODE=0
 NIXFMT_EXIT_CODE=0
 MDFORMAT_EXIT_CODE=0
-SHELLCHECK_EXIT_CODE=0
-SHFMT_EXIT_CODE=0
+SHELLCHECK_EXIT_CODE_SCRIPT=0
+SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=0
+SHFMT_EXIT_CODE_SCRIPT=0
+SHFMT_EXIT_CODE_BREW_SYNC_CHECK=0
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  NIXFMT (FORMATTING)  ┃"
@@ -113,7 +168,7 @@ echo "Running nix fmt on '${NIX_FLAKE_FILE}' (applying formatting)..."
 nix fmt -- --ci --quiet "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
 echo
 
-git_diff "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE" "$NIXFMT_EXIT_CODE"
+git_diff_section "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE" "Nixfmt" "$NIXFMT_EXIT_CODE"
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
@@ -132,7 +187,7 @@ echo "Running RuboCop on '${BREWFILE}' (linting, formatting, and applying correc
 bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
 echo
 
-git_diff "$BREWFILE_SNAPSHOT" "$BREWFILE" "$RUBOCOP_EXIT_CODE"
+git_diff_section "$BREWFILE_SNAPSHOT" "$BREWFILE" "RuboCop" "$RUBOCOP_EXIT_CODE"
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  MDFORMAT (FORMATTING)  ┃"
@@ -152,7 +207,7 @@ mdformat --check "$README" || MDFORMAT_EXIT_CODE=1
 mdformat "$README"
 echo
 
-git_diff "$README_SNAPSHOT" "$README" "$MDFORMAT_EXIT_CODE"
+git_diff_section "$README_SNAPSHOT" "$README" "Mdformat" "$MDFORMAT_EXIT_CODE"
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━━━┓"
 echo "┃  SHELLCHECK (LINTING)  ┃"
@@ -166,10 +221,51 @@ echo
 echo "🛠️ [Execution]"
 echo "────────────────"
 echo "Running shellcheck on '${SCRIPT}' (linting)..."
-shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE=1
+if $CI_MODE; then
+  shellcheck --format=gcc "$SCRIPT" 2>&1 | while IFS=: read -r file line column severity message; do
+    file=$(trim "$file")
+    line=$(trim "$line")
+    column=$(trim "$column")
+    severity=$(trim "$severity")
+    message=$(trim "$message")
+
+    github_annotation="$severity"
+    if [[ $github_annotation != "error" ]]; then
+      github_annotation="warning"
+    fi
+
+    echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
+  done
+
+  # Capture nonzero exit code for syntax errors etc.
+  SHELLCHECK_EXIT_CODE_SCRIPT=${PIPESTATUS[0]}
+else
+  shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE_SCRIPT=1
+fi
+echo
 
 echo "Running shellcheck on '${BREW_SYNC_CHECK}' (linting)..."
-shellcheck "$BREW_SYNC_CHECK" || SHELLCHECK_EXIT_CODE=1
+if [ "${CI_MODE:-false}" = "true" ]; then
+  shellcheck --format=gcc "$BREW_SYNC_CHECK" 2>&1 | while IFS=: read -r file line column severity message; do
+    file=$(trim "$file")
+    line=$(trim "$line")
+    column=$(trim "$column")
+    severity=$(trim "$severity")
+    message=$(trim "$message")
+
+    github_annotation="$severity"
+    if [[ $github_annotation != "error" ]]; then
+      github_annotation="warning"
+    fi
+
+    echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
+  done
+
+  # Capture nonzero exit code for syntax errors etc.
+  SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=${PIPESTATUS[0]}
+else
+  shellcheck "$BREW_SYNC_CHECK" || SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=1
+fi
 echo
 
 echo "┏━━━━━━━━━━━━━━━━━━━━━━┓"
@@ -187,48 +283,118 @@ BREW_SYNC_CHECK_SNAPSHOT="$(file_snapshot "$BREW_SYNC_CHECK" ".brew_sync_check.s
 echo "🛠️ [Execution]"
 echo "────────────────"
 echo "Running shfmt on '${SCRIPT}' (applying formatting)..."
-shfmt -i 2 -ci -s --diff "$SCRIPT" >/dev/null 2>&1 || SHFMT_EXIT_CODE=1
+shfmt -i 2 -ci -s --diff "$SCRIPT" >/dev/null 2>&1 || SHFMT_EXIT_CODE_SCRIPT=1
 shfmt -i 2 -ci -s --write "$SCRIPT"
 echo
-git_diff "$SCRIPT_SNAPSHOT" "$SCRIPT" "$SHFMT_EXIT_CODE"
+git_diff_section "$SCRIPT_SNAPSHOT" "$SCRIPT" "shfmt" "$SHFMT_EXIT_CODE_SCRIPT"
 
 echo "Running shfmt on '${BREW_SYNC_CHECK}' (applying formatting)..."
-shfmt -i 2 -ci -s --diff "$BREW_SYNC_CHECK" >/dev/null 2>&1 || SHFMT_EXIT_CODE=1
+shfmt -i 2 -ci -s --diff "$BREW_SYNC_CHECK" >/dev/null 2>&1 || SHFMT_EXIT_CODE_BREW_SYNC_CHECK=1
 shfmt -i 2 -ci -s --write "$BREW_SYNC_CHECK"
 echo
-git_diff "$BREW_SYNC_CHECK_SNAPSHOT" "$BREW_SYNC_CHECK" "$SHFMT_EXIT_CODE"
+git_diff_section "$BREW_SYNC_CHECK_SNAPSHOT" "$BREW_SYNC_CHECK" "shfmt" "$SHFMT_EXIT_CODE_BREW_SYNC_CHECK"
 
 echo "┏━━━━━━━━━━━┓"
 echo "┃  SUMMARY  ┃"
 echo "┗━━━━━━━━━━━┛"
 echo
 
+SCRIPT_FILE="${SCRIPT##*/}"
+BREW_SYNC_CHECK_FILE="${BREW_SYNC_CHECK##*/}"
+
+# TOOL_STATUSES array Format:
+#
+#   Tool Name : File Path : Exit Code
+#
+# Each entry represents a tool check:
+#
+#    - Tool Name : The name of the tool (e.g., Nixfmt, RuboCop)
+#    - File Path : The file being checked (e.g., flake.nix, dot_Brewfile)
+#    - Exit Code : The result of the tool execution ($? for that tool)
+#
 TOOL_STATUSES=(
-  "Nixfmt:$NIXFMT_EXIT_CODE"
-  "RuboCop:$RUBOCOP_EXIT_CODE"
-  "Mdformat:$MDFORMAT_EXIT_CODE"
-  "Shellcheck:$SHELLCHECK_EXIT_CODE"
-  "shfmt:$SHFMT_EXIT_CODE"
+  "Nixfmt     : $NIX_FLAKE_FILE         : $NIXFMT_EXIT_CODE"
+  "RuboCop    : $BREWFILE               : $RUBOCOP_EXIT_CODE"
+  "Mdformat   : $README                 : $MDFORMAT_EXIT_CODE"
+  "Shellcheck : ${SCRIPT_FILE}          : $SHELLCHECK_EXIT_CODE_SCRIPT"
+  "Shellcheck : ${BREW_SYNC_CHECK_FILE} : $SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK"
+  "shfmt      : ${SCRIPT_FILE}          : $SHFMT_EXIT_CODE_SCRIPT"
+  "shfmt      : ${BREW_SYNC_CHECK_FILE} : $SHFMT_EXIT_CODE_BREW_SYNC_CHECK"
 )
+
+max_field_length() {
+  # Returns the length of the longest field at the given column index
+  # Usage: max_field_length <column_index> ":" "${ARRAY[@]}"
+  local index="$1"
+  local delimiter="$2"
+  shift 2
+
+  local array=("$@")
+  local max_length=0
+  local item field length
+  for item in "${array[@]}"; do
+    IFS="$delimiter" read -r -a fields <<<"$item"
+    field="${fields[$index]}"
+
+    # Trim leading/trailing whitespace
+    field="${field#"${field%%[![:space:]]*}"}"
+    field="${field%"${field##*[![:space:]]}"}"
+
+    length=${#field}
+
+    ((length > max_length)) && max_length=$length
+  done
+
+  echo "$max_length"
+}
+
+# Generate a dynamic separator.
+max_tool_length=$(max_field_length 0 ":" "${TOOL_STATUSES[@]}")
+max_file_length=$(max_field_length 1 ":" "${TOOL_STATUSES[@]}")
+
+tool_separator="$(printf '%*s' "$max_tool_length" '' | tr ' ' '-')"
+file_separator="$(printf '%*s' "$max_file_length" '' | tr ' ' '-')"
 
 EXIT_CODE=0
 
-OUTPUT="Tool\tStatus\n"
-OUTPUT+="-------\t-------\n"
+field1="Tool"
+field2="File"
+field3="Result"
 
-for status in "${TOOL_STATUSES[@]}"; do
-  name="${status%%:*}"
-  code="${status##*:}"
+OUTPUT_MD="| ${field1} | ${field2} | ${field3} |\n"
+OUTPUT_MD+="---|---|---|\n"
+
+OUTPUT_CONSOLE="${field1}\t${field2}\t${field3}\n"
+OUTPUT_CONSOLE+="${tool_separator}\t${file_separator}\t-------\n"
+
+for entry in "${TOOL_STATUSES[@]}"; do
+  IFS=":" read -r tool file code <<<"$entry"
+
+  # Trim whitespace:
+  tool=$(trim "$tool")
+  file=$(trim "$file")
 
   if ((code)); then
-    line="${name}\t❌\n"
+    checkmark="❌"
     EXIT_CODE=1
   else
-    line="${name}\t✅\n"
+    checkmark="✅"
   fi
-  OUTPUT+="$line"
-done
 
-printf "%b" "$OUTPUT" | column -t
+  OUTPUT_MD+="| ${tool} | \`${file}\` | ${checkmark} |\n"
+
+  OUTPUT_CONSOLE+="${tool}\t${file}\t${checkmark}\n"
+done
+OUTPUT_CONSOLE+="${tool_separator}\t${file_separator}\t-------\n"
+
+printf "%b" "$OUTPUT_CONSOLE" | column -t -s $'\t'
+
+if $CI_MODE; then
+  {
+    echo "### 📝 Lint／Format Summary"
+    echo ""
+    printf "%b" "$OUTPUT_MD"
+  } >>"$GITHUB_STEP_SUMMARY"
+fi
 
 [[ $EXIT_CODE -eq 0 ]] || exit 1
