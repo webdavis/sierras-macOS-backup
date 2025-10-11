@@ -101,7 +101,7 @@ max_array_length() {
     length=${#array2[@]}
   fi
 
-  echo "$length"
+  echo $length
 }
 
 print_row() {
