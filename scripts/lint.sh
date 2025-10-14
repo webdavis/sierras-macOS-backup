@@ -49,9 +49,15 @@ declare_global_variables() {
   RESET='\033[0m' # No Color
 }
 
+# shellcheck disable=SC2329,SC2317
 cleanup() {
+  # cleanup is triggered via the trap command in `setup_signal_handling` on the following signals:
+  #   ∙ SIGINT  : Interrupt (Ctrl+C)
+  #   ∙ SIGTERM : Termination signal
+  #   ∙ EXIT    : Normal script exit
+
   # Exit with the status of the command that triggered this trap.
-  local status=$?
+  local status="${?:-0}"
 
   [ -f "${BREWFILE_SNAPSHOT:-}" ] && rm "$BREWFILE_SNAPSHOT"
   [ -f "${NIX_FLAKE_FILE_SNAPSHOT:-}" ] && rm "$NIX_FLAKE_FILE_SNAPSHOT"
@@ -59,7 +65,7 @@ cleanup() {
   [ -f "${SCRIPT_SNAPSHOT:-}" ] && rm "$SCRIPT_SNAPSHOT"
   [ -f "${BREW_SYNC_CHECK_SNAPSHOT:-}" ] && rm "$BREW_SYNC_CHECK_SNAPSHOT"
 
-  exit $status
+  exit "$status"
 }
 
 setup_signal_handling() {
