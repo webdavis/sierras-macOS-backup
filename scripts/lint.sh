@@ -70,6 +70,32 @@ setup_signal_handling() {
   trap cleanup EXIT
 }
 
+parse_script_flags() {
+  declare -g CI_MODE
+  CI_MODE=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --ci)
+        CI_MODE=true
+        shift
+        ;;
+      --) # End of options.
+        shift
+        break
+        ;;
+      -*)
+        echo "Error: invalid option '$1'" >&2
+        exit 1
+        ;;
+      *)
+        # Positional argument.
+        break
+        ;;
+    esac
+  done
+}
+
 require_file() {
   local files=("$@")
   local missing_files=()
@@ -168,29 +194,7 @@ max_field_length() {
 main() {
   declare_global_variables
   setup_signal_handling
-
-  CI_MODE=false
-
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --ci)
-        CI_MODE=true
-        shift
-        ;;
-      --) # End of options.
-        shift
-        break
-        ;;
-      -*)
-        echo "Error: invalid option '$1'" >&2
-        exit 1
-        ;;
-      *)
-        # Positional argument.
-        break
-        ;;
-    esac
-  done
+  parse_script_flags "$@"
 
   # Ensure this script runs from the project root.
   PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
@@ -278,48 +282,48 @@ main() {
   echo "Running shellcheck on '${SCRIPT}' (linting)..."
   if $CI_MODE; then
     shellcheck --format=gcc "$SCRIPT" 2>&1 | while IFS=: read -r file line column severity message; do
-      file=$(trim "$file")
-      line=$(trim "$line")
-      column=$(trim "$column")
-      severity=$(trim "$severity")
-      message=$(trim "$message")
+    file=$(trim "$file")
+    line=$(trim "$line")
+    column=$(trim "$column")
+    severity=$(trim "$severity")
+    message=$(trim "$message")
 
-      github_annotation="$severity"
-      if [[ $github_annotation != "error" ]]; then
-        github_annotation="warning"
-      fi
+    github_annotation="$severity"
+    if [[ $github_annotation != "error" ]]; then
+      github_annotation="warning"
+    fi
 
-      echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
-    done
+    echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
+  done
 
-    # Capture nonzero exit code for syntax errors etc.
-    SHELLCHECK_EXIT_CODE_SCRIPT=${PIPESTATUS[0]}
-  else
-    shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE_SCRIPT=1
+  # Capture nonzero exit code for syntax errors etc.
+  SHELLCHECK_EXIT_CODE_SCRIPT=${PIPESTATUS[0]}
+else
+  shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE_SCRIPT=1
   fi
   echo
 
   echo "Running shellcheck on '${BREW_SYNC_CHECK}' (linting)..."
   if [ "${CI_MODE:-false}" = "true" ]; then
     shellcheck --format=gcc "$BREW_SYNC_CHECK" 2>&1 | while IFS=: read -r file line column severity message; do
-      file=$(trim "$file")
-      line=$(trim "$line")
-      column=$(trim "$column")
-      severity=$(trim "$severity")
-      message=$(trim "$message")
+    file=$(trim "$file")
+    line=$(trim "$line")
+    column=$(trim "$column")
+    severity=$(trim "$severity")
+    message=$(trim "$message")
 
-      github_annotation="$severity"
-      if [[ $github_annotation != "error" ]]; then
-        github_annotation="warning"
-      fi
+    github_annotation="$severity"
+    if [[ $github_annotation != "error" ]]; then
+      github_annotation="warning"
+    fi
 
-      echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
-    done
+    echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
+  done
 
-    # Capture nonzero exit code for syntax errors etc.
-    SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=${PIPESTATUS[0]}
-  else
-    shellcheck "$BREW_SYNC_CHECK" || SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=1
+  # Capture nonzero exit code for syntax errors etc.
+  SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=${PIPESTATUS[0]}
+else
+  shellcheck "$BREW_SYNC_CHECK" || SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=1
   fi
   echo
 
