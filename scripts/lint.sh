@@ -206,6 +206,32 @@ max_field_length() {
   echo "$max_length"
 }
 
+build_tool_statuses() {
+  local script_file brew_sync_check_file
+  script_file="${SCRIPT##*/}"
+  brew_sync_check_file="${BREW_SYNC_CHECK##*/}"
+
+  # TOOL_STATUSES array Format:
+  #
+  #   Tool Name : File Path : Exit Code
+  #
+  # Each entry represents a tool check:
+  #
+  #    - Tool Name : The name of the tool (e.g., Nixfmt, RuboCop)
+  #    - File Path : The file being checked (e.g., flake.nix, dot_Brewfile)
+  #    - Exit Code : The result of the tool execution ($? for that tool)
+  #
+  TOOL_STATUSES=(
+    "Nixfmt     : $NIX_FLAKE_FILE         : $NIXFMT_EXIT_CODE"
+    "RuboCop    : $BREWFILE               : $RUBOCOP_EXIT_CODE"
+    "Mdformat   : $README                 : $MDFORMAT_EXIT_CODE"
+    "Shellcheck : ${script_file}          : $SHELLCHECK_EXIT_CODE_SCRIPT"
+    "Shellcheck : ${brew_sync_check_file} : $SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK"
+    "shfmt      : ${script_file}          : $SHFMT_EXIT_CODE_SCRIPT"
+    "shfmt      : ${brew_sync_check_file} : $SHFMT_EXIT_CODE_BREW_SYNC_CHECK"
+  )
+}
+
 main() {
   setup_signal_handling
   declare_global_variables
@@ -362,28 +388,7 @@ else
   echo "┗━━━━━━━━━━━┛"
   echo
 
-  SCRIPT_FILE="${SCRIPT##*/}"
-  BREW_SYNC_CHECK_FILE="${BREW_SYNC_CHECK##*/}"
-
-  # TOOL_STATUSES array Format:
-  #
-  #   Tool Name : File Path : Exit Code
-  #
-  # Each entry represents a tool check:
-  #
-  #    - Tool Name : The name of the tool (e.g., Nixfmt, RuboCop)
-  #    - File Path : The file being checked (e.g., flake.nix, dot_Brewfile)
-  #    - Exit Code : The result of the tool execution ($? for that tool)
-  #
-  TOOL_STATUSES=(
-    "Nixfmt     : $NIX_FLAKE_FILE         : $NIXFMT_EXIT_CODE"
-    "RuboCop    : $BREWFILE               : $RUBOCOP_EXIT_CODE"
-    "Mdformat   : $README                 : $MDFORMAT_EXIT_CODE"
-    "Shellcheck : ${SCRIPT_FILE}          : $SHELLCHECK_EXIT_CODE_SCRIPT"
-    "Shellcheck : ${BREW_SYNC_CHECK_FILE} : $SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK"
-    "shfmt      : ${SCRIPT_FILE}          : $SHFMT_EXIT_CODE_SCRIPT"
-    "shfmt      : ${BREW_SYNC_CHECK_FILE} : $SHFMT_EXIT_CODE_BREW_SYNC_CHECK"
-  )
+  build_tool_statuses
 
   # Generate a dynamic separator.
   max_tool_length=$(max_field_length 0 ":" "${TOOL_STATUSES[@]}")
