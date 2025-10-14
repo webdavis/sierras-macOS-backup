@@ -471,8 +471,8 @@ main() {
   run_shfmt
 
   print_summary
-
-  [[ $EXIT_CODE -eq 0 ]] || exit 1
 }
 
 main "$@"
+
+exit "$EXIT_CODE"
