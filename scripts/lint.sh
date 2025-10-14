@@ -232,6 +232,77 @@ build_tool_statuses() {
   )
 }
 
+generate_summary_output() {
+  # Generate a dynamic separator.
+  local max_tool_length max_file_length
+  max_tool_length=$(max_field_length 0 ":" "${TOOL_STATUSES[@]}")
+  max_file_length=$(max_field_length 1 ":" "${TOOL_STATUSES[@]}")
+
+  local tool_separator file_separator
+  tool_separator="$(printf '%*s' "$max_tool_length" '' | tr ' ' '-')"
+  file_separator="$(printf '%*s' "$max_file_length" '' | tr ' ' '-')"
+
+  EXIT_CODE=0
+
+  local field1="Tool"
+  local field2="File"
+  local field3="Result"
+
+  OUTPUT_MD="| ${field1} | ${field2} | ${field3} |\n"
+  OUTPUT_MD+="---|---|---|\n"
+
+  OUTPUT_CONSOLE="${field1}\t${field2}\t${field3}\n"
+  OUTPUT_CONSOLE+="${tool_separator}\t${file_separator}\t-------\n"
+
+  local entry tool file code
+  for entry in "${TOOL_STATUSES[@]}"; do
+    IFS=":" read -r tool file code <<<"$entry"
+
+    # Trim whitespace:
+    tool=$(trim "$tool")
+    file=$(trim "$file")
+
+    local checkmark
+    if ((code)); then
+      checkmark="❌"
+      EXIT_CODE=1
+    else
+      checkmark="✅"
+    fi
+
+    OUTPUT_MD+="| ${tool} | \`${file}\` | ${checkmark} |\n"
+
+    OUTPUT_CONSOLE+="${tool}\t${file}\t${checkmark}\n"
+  done
+  OUTPUT_CONSOLE+="${tool_separator}\t${file_separator}\t-------\n"
+}
+
+print_summary_to_console() {
+  printf "%b" "$OUTPUT_CONSOLE" | column -t -s $'\t'
+}
+
+print_summary_to_gh_workflow () {
+  if $CI_MODE; then
+    {
+      echo "### 📝 Lint／Format Summary"
+      echo ""
+      printf "%b" "$OUTPUT_MD"
+    } >>"$GITHUB_STEP_SUMMARY"
+  fi
+}
+
+print_summary() {
+  echo "┏━━━━━━━━━━━┓"
+  echo "┃  SUMMARY  ┃"
+  echo "┗━━━━━━━━━━━┛"
+  echo
+
+  build_tool_statuses
+  generate_summary_output
+  print_summary_to_console
+  print_summary_to_gh_workflow
+}
+
 main() {
   setup_signal_handling
   declare_global_variables
@@ -383,61 +454,7 @@ else
   echo
   git_diff_section "$BREW_SYNC_CHECK_SNAPSHOT" "$BREW_SYNC_CHECK" "shfmt" "$SHFMT_EXIT_CODE_BREW_SYNC_CHECK"
 
-  echo "┏━━━━━━━━━━━┓"
-  echo "┃  SUMMARY  ┃"
-  echo "┗━━━━━━━━━━━┛"
-  echo
-
-  build_tool_statuses
-
-  # Generate a dynamic separator.
-  max_tool_length=$(max_field_length 0 ":" "${TOOL_STATUSES[@]}")
-  max_file_length=$(max_field_length 1 ":" "${TOOL_STATUSES[@]}")
-
-  tool_separator="$(printf '%*s' "$max_tool_length" '' | tr ' ' '-')"
-  file_separator="$(printf '%*s' "$max_file_length" '' | tr ' ' '-')"
-
-  EXIT_CODE=0
-
-  field1="Tool"
-  field2="File"
-  field3="Result"
-
-  OUTPUT_MD="| ${field1} | ${field2} | ${field3} |\n"
-  OUTPUT_MD+="---|---|---|\n"
-
-  OUTPUT_CONSOLE="${field1}\t${field2}\t${field3}\n"
-  OUTPUT_CONSOLE+="${tool_separator}\t${file_separator}\t-------\n"
-
-  for entry in "${TOOL_STATUSES[@]}"; do
-    IFS=":" read -r tool file code <<<"$entry"
-
-    # Trim whitespace:
-    tool=$(trim "$tool")
-    file=$(trim "$file")
-
-    if ((code)); then
-      checkmark="❌"
-      EXIT_CODE=1
-    else
-      checkmark="✅"
-    fi
-
-    OUTPUT_MD+="| ${tool} | \`${file}\` | ${checkmark} |\n"
-
-    OUTPUT_CONSOLE+="${tool}\t${file}\t${checkmark}\n"
-  done
-  OUTPUT_CONSOLE+="${tool_separator}\t${file_separator}\t-------\n"
-
-  printf "%b" "$OUTPUT_CONSOLE" | column -t -s $'\t'
-
-  if $CI_MODE; then
-    {
-      echo "### 📝 Lint／Format Summary"
-      echo ""
-      printf "%b" "$OUTPUT_MD"
-    } >>"$GITHUB_STEP_SUMMARY"
-  fi
+  print_summary
 
   [[ $EXIT_CODE -eq 0 ]] || exit 1
 }
