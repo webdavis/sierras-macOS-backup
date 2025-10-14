@@ -243,6 +243,7 @@ run_rubocop() {
   echo "RuboCop version: $(bundle exec rubocop -v)"
   echo
 
+  declare -g BREWFILE_SNAPSHOT
   BREWFILE_SNAPSHOT="$(file_snapshot "$BREWFILE" ".brewfile")"
 
   echo "🛠️ [Execution]"
@@ -264,6 +265,7 @@ run_mdformat() {
   echo "mdformat version: $(mdformat --version)"
   echo
 
+  declare -g README_SNAPSHOT
   README_SNAPSHOT="$(file_snapshot "$README" ".readme.md")"
 
   echo "🛠️ [Execution]"
@@ -347,7 +349,10 @@ run_shfmt() {
   echo "shfmt version: $(shfmt --version)"
   echo
 
+  declare -g SCRIPT_SNAPSHOT
   SCRIPT_SNAPSHOT="$(file_snapshot "$SCRIPT" ".lint.sh")"
+
+  declare -g BREW_SYNC_CHECK_SNAPSHOT
   BREW_SYNC_CHECK_SNAPSHOT="$(file_snapshot "$BREW_SYNC_CHECK" ".brew_sync_check.sh")"
 
   echo "🛠️ [Execution]"
