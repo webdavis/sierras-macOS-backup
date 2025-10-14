@@ -207,8 +207,8 @@ max_field_length() {
 }
 
 main() {
-  declare_global_variables
   setup_signal_handling
+  declare_global_variables
   parse_script_flags "$@"
   change_to_project_root
 
