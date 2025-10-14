@@ -3,16 +3,51 @@
 # Exit immediately if any variables are unset.
 set -u
 
-# Target files:
-BREWFILE="dot_Brewfile"
-NIX_FLAKE_FILE="flake.nix"
-README="README.md"
-SCRIPT="scripts/lint.sh"
-BREW_SYNC_CHECK="scripts/brew-sync-check.sh"
+declare_global_variables() {
+  # Target files:
+  declare -g \
+    BREWFILE \
+    NIX_FLAKE_FILE \
+    README \
+    SCRIPT \
+    BREW_SYNC_CHECK
 
-# Colors:
-RED='\033[0;31m'
-RESET='\033[0m' # No Color
+  BREWFILE="dot_Brewfile"
+  NIX_FLAKE_FILE="flake.nix"
+  README="README.md"
+  SCRIPT="scripts/lint.sh"
+  BREW_SYNC_CHECK="scripts/brew-sync-check.sh"
+
+  # Script exit code:
+  declare -g EXIT_CODE
+  EXIT_CODE=0
+
+  # Formatter/linter exit codes:
+  declare -g \
+    RUBOCOP_EXIT_CODE \
+    NIXFMT_EXIT_CODE \
+    MDFORMAT_EXIT_CODE \
+    SHELLCHECK_EXIT_CODE_SCRIPT \
+    SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK \
+    SHFMT_EXIT_CODE_SCRIPT \
+    SHFMT_EXIT_CODE_BREW_SYNC_CHECK
+
+  RUBOCOP_EXIT_CODE=0
+  NIXFMT_EXIT_CODE=0
+  MDFORMAT_EXIT_CODE=0
+  SHELLCHECK_EXIT_CODE_SCRIPT=0
+  SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=0
+  SHFMT_EXIT_CODE_SCRIPT=0
+  SHFMT_EXIT_CODE_BREW_SYNC_CHECK=0
+
+  # Colors:
+  declare -g \
+    RED \
+    RESET
+
+  RED='\033[0;31m'
+  RESET='\033[0m' # No Color
+}
 
 cleanup() {
   # Exit with the status of the command that triggered this trap.
@@ -131,6 +166,7 @@ max_field_length() {
 }
 
 main() {
+  declare_global_variables
   setup_signal_handling
 
   CI_MODE=false
@@ -169,14 +205,6 @@ main() {
   fi
 
   require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$SCRIPT" "$BREW_SYNC_CHECK"
-
-  RUBOCOP_EXIT_CODE=0
-  NIXFMT_EXIT_CODE=0
-  MDFORMAT_EXIT_CODE=0
-  SHELLCHECK_EXIT_CODE_SCRIPT=0
-  SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=0
-  SHFMT_EXIT_CODE_SCRIPT=0
-  SHFMT_EXIT_CODE_BREW_SYNC_CHECK=0
 
   echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  NIXFMT (FORMATTING)  ┃"
