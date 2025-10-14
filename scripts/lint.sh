@@ -206,6 +206,159 @@ max_field_length() {
   echo "$max_length"
 }
 
+run_nixfmt() {
+  echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
+  echo "┃  NIXFMT (FORMATTING)  ┃"
+  echo "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
+  echo "📌 [Info]"
+  echo "───────────"
+  echo "nixfmt path: $(command -v treefmt)"
+  echo "nixfmt version: $(nix fmt -- --version)"
+  echo
+
+  NIX_FLAKE_FILE_SNAPSHOT="$(file_snapshot "$NIX_FLAKE_FILE" ".flake.nix")"
+
+  echo "🛠️ [Execution]"
+  echo "────────────────"
+  echo "Running nix fmt on '${NIX_FLAKE_FILE}' (applying formatting)..."
+  nix fmt -- --ci --quiet "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
+  echo
+
+  git_diff_section "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE" "Nixfmt" "$NIXFMT_EXIT_CODE"
+}
+
+run_rubocop() {
+  echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+  echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
+  echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+  echo "📌 [Info]"
+  echo "───────────"
+  echo "RuboCop path: $(bundle exec command -v rubocop)"
+  echo "RuboCop version: $(bundle exec rubocop -v)"
+  echo
+
+  BREWFILE_SNAPSHOT="$(file_snapshot "$BREWFILE" ".brewfile")"
+
+  echo "🛠️ [Execution]"
+  echo "────────────────"
+  echo "Running RuboCop on '${BREWFILE}' (linting, formatting, and applying corrections)..."
+  bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
+  echo
+
+  git_diff_section "$BREWFILE_SNAPSHOT" "$BREWFILE" "RuboCop" "$RUBOCOP_EXIT_CODE"
+}
+
+run_mdformat() {
+  echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+  echo "┃  MDFORMAT (FORMATTING)  ┃"
+  echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+  echo "📌 [Info]"
+  echo "───────────"
+  echo "mdformat path: $(command -v mdformat)"
+  echo "mdformat version: $(mdformat --version)"
+  echo
+
+  README_SNAPSHOT="$(file_snapshot "$README" ".readme.md")"
+
+  echo "🛠️ [Execution]"
+  echo "────────────────"
+  echo "Running mdformat on '${README}' (applying formatting)..."
+  mdformat --check "$README" || MDFORMAT_EXIT_CODE=1
+  mdformat "$README"
+  echo
+
+  git_diff_section "$README_SNAPSHOT" "$README" "Mdformat" "$MDFORMAT_EXIT_CODE"
+}
+
+run_shellcheck() {
+  echo "┏━━━━━━━━━━━━━━━━━━━━━━━━┓"
+  echo "┃  SHELLCHECK (LINTING)  ┃"
+  echo "┗━━━━━━━━━━━━━━━━━━━━━━━━┛"
+  echo "📌 [Info]"
+  echo "───────────"
+  echo "shellcheck path: $(command -v shellcheck)"
+  echo "shellcheck version: $(shellcheck --version | awk '/^version:/ {print $2}')"
+  echo
+
+  echo "🛠️ [Execution]"
+  echo "────────────────"
+  echo "Running shellcheck on '${SCRIPT}' (linting)..."
+  if $CI_MODE; then
+    shellcheck --format=gcc "$SCRIPT" 2>&1 | while IFS=: read -r file line column severity message; do
+    file=$(trim "$file")
+    line=$(trim "$line")
+    column=$(trim "$column")
+    severity=$(trim "$severity")
+    message=$(trim "$message")
+
+    github_annotation="$severity"
+    if [[ $github_annotation != "error" ]]; then
+      github_annotation="warning"
+    fi
+
+    echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
+  done
+
+  # Capture nonzero exit code for syntax errors etc.
+  SHELLCHECK_EXIT_CODE_SCRIPT=${PIPESTATUS[0]}
+else
+  shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE_SCRIPT=1
+  fi
+  echo
+
+  echo "Running shellcheck on '${BREW_SYNC_CHECK}' (linting)..."
+  if [ "${CI_MODE:-false}" = "true" ]; then
+    shellcheck --format=gcc "$BREW_SYNC_CHECK" 2>&1 | while IFS=: read -r file line column severity message; do
+    file=$(trim "$file")
+    line=$(trim "$line")
+    column=$(trim "$column")
+    severity=$(trim "$severity")
+    message=$(trim "$message")
+
+    github_annotation="$severity"
+    if [[ $github_annotation != "error" ]]; then
+      github_annotation="warning"
+    fi
+
+    echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
+  done
+
+  # Capture nonzero exit code for syntax errors etc.
+  SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=${PIPESTATUS[0]}
+else
+  shellcheck "$BREW_SYNC_CHECK" || SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=1
+  fi
+  echo
+}
+
+run_shfmt() {
+  echo "┏━━━━━━━━━━━━━━━━━━━━━━┓"
+  echo "┃  SHFMT (FORMATTING)  ┃"
+  echo "┗━━━━━━━━━━━━━━━━━━━━━━┛"
+  echo "📌 [Info]"
+  echo "───────────"
+  echo "shfmt path: $(command -v shfmt)"
+  echo "shfmt version: $(shfmt --version)"
+  echo
+
+  SCRIPT_SNAPSHOT="$(file_snapshot "$SCRIPT" ".lint.sh")"
+  BREW_SYNC_CHECK_SNAPSHOT="$(file_snapshot "$BREW_SYNC_CHECK" ".brew_sync_check.sh")"
+
+  echo "🛠️ [Execution]"
+  echo "────────────────"
+  echo "Running shfmt on '${SCRIPT}' (applying formatting)..."
+  shfmt -i 2 -ci -s --diff "$SCRIPT" >/dev/null 2>&1 || SHFMT_EXIT_CODE_SCRIPT=1
+  shfmt -i 2 -ci -s --write "$SCRIPT"
+  echo
+  git_diff_section "$SCRIPT_SNAPSHOT" "$SCRIPT" "shfmt" "$SHFMT_EXIT_CODE_SCRIPT"
+
+  echo "Running shfmt on '${BREW_SYNC_CHECK}' (applying formatting)..."
+  shfmt -i 2 -ci -s --diff "$BREW_SYNC_CHECK" >/dev/null 2>&1 || SHFMT_EXIT_CODE_BREW_SYNC_CHECK=1
+  shfmt -i 2 -ci -s --write "$BREW_SYNC_CHECK"
+  echo
+  git_diff_section "$BREW_SYNC_CHECK_SNAPSHOT" "$BREW_SYNC_CHECK" "shfmt" "$SHFMT_EXIT_CODE_BREW_SYNC_CHECK"
+}
+
 build_tool_statuses() {
   local script_file brew_sync_check_file
   script_file="${SCRIPT##*/}"
@@ -311,148 +464,11 @@ main() {
 
   require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$SCRIPT" "$BREW_SYNC_CHECK"
 
-  echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
-  echo "┃  NIXFMT (FORMATTING)  ┃"
-  echo "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
-  echo "📌 [Info]"
-  echo "───────────"
-  echo "nixfmt path: $(command -v treefmt)"
-  echo "nixfmt version: $(nix fmt -- --version)"
-  echo
-
-  NIX_FLAKE_FILE_SNAPSHOT="$(file_snapshot "$NIX_FLAKE_FILE" ".flake.nix")"
-
-  echo "🛠️ [Execution]"
-  echo "────────────────"
-  echo "Running nix fmt on '${NIX_FLAKE_FILE}' (applying formatting)..."
-  nix fmt -- --ci --quiet "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
-  echo
-
-  git_diff_section "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE" "Nixfmt" "$NIXFMT_EXIT_CODE"
-
-  echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
-  echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
-  echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
-  echo "📌 [Info]"
-  echo "───────────"
-  echo "RuboCop path: $(bundle exec command -v rubocop)"
-  echo "RuboCop version: $(bundle exec rubocop -v)"
-  echo
-
-  BREWFILE_SNAPSHOT="$(file_snapshot "$BREWFILE" ".brewfile")"
-
-  echo "🛠️ [Execution]"
-  echo "────────────────"
-  echo "Running RuboCop on '${BREWFILE}' (linting, formatting, and applying corrections)..."
-  bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
-  echo
-
-  git_diff_section "$BREWFILE_SNAPSHOT" "$BREWFILE" "RuboCop" "$RUBOCOP_EXIT_CODE"
-
-  echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━┓"
-  echo "┃  MDFORMAT (FORMATTING)  ┃"
-  echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━┛"
-  echo "📌 [Info]"
-  echo "───────────"
-  echo "mdformat path: $(command -v mdformat)"
-  echo "mdformat version: $(mdformat --version)"
-  echo
-
-  README_SNAPSHOT="$(file_snapshot "$README" ".readme.md")"
-
-  echo "🛠️ [Execution]"
-  echo "────────────────"
-  echo "Running mdformat on '${README}' (applying formatting)..."
-  mdformat --check "$README" || MDFORMAT_EXIT_CODE=1
-  mdformat "$README"
-  echo
-
-  git_diff_section "$README_SNAPSHOT" "$README" "Mdformat" "$MDFORMAT_EXIT_CODE"
-
-  echo "┏━━━━━━━━━━━━━━━━━━━━━━━━┓"
-  echo "┃  SHELLCHECK (LINTING)  ┃"
-  echo "┗━━━━━━━━━━━━━━━━━━━━━━━━┛"
-  echo "📌 [Info]"
-  echo "───────────"
-  echo "shellcheck path: $(command -v shellcheck)"
-  echo "shellcheck version: $(shellcheck --version | awk '/^version:/ {print $2}')"
-  echo
-
-  echo "🛠️ [Execution]"
-  echo "────────────────"
-  echo "Running shellcheck on '${SCRIPT}' (linting)..."
-  if $CI_MODE; then
-    shellcheck --format=gcc "$SCRIPT" 2>&1 | while IFS=: read -r file line column severity message; do
-    file=$(trim "$file")
-    line=$(trim "$line")
-    column=$(trim "$column")
-    severity=$(trim "$severity")
-    message=$(trim "$message")
-
-    github_annotation="$severity"
-    if [[ $github_annotation != "error" ]]; then
-      github_annotation="warning"
-    fi
-
-    echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
-  done
-
-  # Capture nonzero exit code for syntax errors etc.
-  SHELLCHECK_EXIT_CODE_SCRIPT=${PIPESTATUS[0]}
-else
-  shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE_SCRIPT=1
-  fi
-  echo
-
-  echo "Running shellcheck on '${BREW_SYNC_CHECK}' (linting)..."
-  if [ "${CI_MODE:-false}" = "true" ]; then
-    shellcheck --format=gcc "$BREW_SYNC_CHECK" 2>&1 | while IFS=: read -r file line column severity message; do
-    file=$(trim "$file")
-    line=$(trim "$line")
-    column=$(trim "$column")
-    severity=$(trim "$severity")
-    message=$(trim "$message")
-
-    github_annotation="$severity"
-    if [[ $github_annotation != "error" ]]; then
-      github_annotation="warning"
-    fi
-
-    echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
-  done
-
-  # Capture nonzero exit code for syntax errors etc.
-  SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=${PIPESTATUS[0]}
-else
-  shellcheck "$BREW_SYNC_CHECK" || SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=1
-  fi
-  echo
-
-  echo "┏━━━━━━━━━━━━━━━━━━━━━━┓"
-  echo "┃  SHFMT (FORMATTING)  ┃"
-  echo "┗━━━━━━━━━━━━━━━━━━━━━━┛"
-  echo "📌 [Info]"
-  echo "───────────"
-  echo "shfmt path: $(command -v shfmt)"
-  echo "shfmt version: $(shfmt --version)"
-  echo
-
-  SCRIPT_SNAPSHOT="$(file_snapshot "$SCRIPT" ".lint.sh")"
-  BREW_SYNC_CHECK_SNAPSHOT="$(file_snapshot "$BREW_SYNC_CHECK" ".brew_sync_check.sh")"
-
-  echo "🛠️ [Execution]"
-  echo "────────────────"
-  echo "Running shfmt on '${SCRIPT}' (applying formatting)..."
-  shfmt -i 2 -ci -s --diff "$SCRIPT" >/dev/null 2>&1 || SHFMT_EXIT_CODE_SCRIPT=1
-  shfmt -i 2 -ci -s --write "$SCRIPT"
-  echo
-  git_diff_section "$SCRIPT_SNAPSHOT" "$SCRIPT" "shfmt" "$SHFMT_EXIT_CODE_SCRIPT"
-
-  echo "Running shfmt on '${BREW_SYNC_CHECK}' (applying formatting)..."
-  shfmt -i 2 -ci -s --diff "$BREW_SYNC_CHECK" >/dev/null 2>&1 || SHFMT_EXIT_CODE_BREW_SYNC_CHECK=1
-  shfmt -i 2 -ci -s --write "$BREW_SYNC_CHECK"
-  echo
-  git_diff_section "$BREW_SYNC_CHECK_SNAPSHOT" "$BREW_SYNC_CHECK" "shfmt" "$SHFMT_EXIT_CODE_BREW_SYNC_CHECK"
+  run_nixfmt
+  run_rubocop
+  run_mdformat
+  run_shellcheck
+  run_shfmt
 
   print_summary
 
