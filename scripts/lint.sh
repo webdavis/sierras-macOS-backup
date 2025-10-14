@@ -3,6 +3,42 @@
 # Exit immediately if any variables are unset.
 set -u
 
+verify_nix_environment() {
+  case "${IN_NIX_SHELL:-}" in
+    pure | impure) return 0 ;;
+  esac
+
+  local file
+  file="$SCRIPT"
+
+  local ci_suffix=""
+  local error_prefix
+  if $CI_MODE; then
+    ci_suffix=" --ci"
+    error_prefix="::error file=${file}::"
+  else
+    error_prefix="Error:"
+  fi
+
+  local message
+  message=$(
+    cat <<-EOF
+${file} must be run inside a Nix flake development shell.
+
+To enter the environment, run:
+  > nix develop
+  > ./scripts/lint.sh${ci_suffix}
+
+Or run this script directly from a temporary dev shell, like so:
+  > nix develop .#adhoc --command ./scripts/lint.sh${ci_suffix}
+EOF
+  )
+
+  printf '%s %s\n' "$error_prefix" "$message" >&2
+
+  exit 1
+}
+
 declare_global_variables() {
   # Target files:
   declare -g \
@@ -293,48 +329,48 @@ run_shellcheck() {
   echo "Running shellcheck on '${SCRIPT}' (linting)..."
   if $CI_MODE; then
     shellcheck --format=gcc "$SCRIPT" 2>&1 | while IFS=: read -r file line column severity message; do
-    file=$(trim "$file")
-    line=$(trim "$line")
-    column=$(trim "$column")
-    severity=$(trim "$severity")
-    message=$(trim "$message")
+      file=$(trim "$file")
+      line=$(trim "$line")
+      column=$(trim "$column")
+      severity=$(trim "$severity")
+      message=$(trim "$message")
 
-    github_annotation="$severity"
-    if [[ $github_annotation != "error" ]]; then
-      github_annotation="warning"
-    fi
+      github_annotation="$severity"
+      if [[ $github_annotation != "error" ]]; then
+        github_annotation="warning"
+      fi
 
-    echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
-  done
+      echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
+    done
 
-  # Capture nonzero exit code for syntax errors etc.
-  SHELLCHECK_EXIT_CODE_SCRIPT=${PIPESTATUS[0]}
-else
-  shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE_SCRIPT=1
+    # Capture nonzero exit code for syntax errors etc.
+    SHELLCHECK_EXIT_CODE_SCRIPT=${PIPESTATUS[0]}
+  else
+    shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE_SCRIPT=1
   fi
   echo
 
   echo "Running shellcheck on '${BREW_SYNC_CHECK}' (linting)..."
   if [ "${CI_MODE:-false}" = "true" ]; then
     shellcheck --format=gcc "$BREW_SYNC_CHECK" 2>&1 | while IFS=: read -r file line column severity message; do
-    file=$(trim "$file")
-    line=$(trim "$line")
-    column=$(trim "$column")
-    severity=$(trim "$severity")
-    message=$(trim "$message")
+      file=$(trim "$file")
+      line=$(trim "$line")
+      column=$(trim "$column")
+      severity=$(trim "$severity")
+      message=$(trim "$message")
 
-    github_annotation="$severity"
-    if [[ $github_annotation != "error" ]]; then
-      github_annotation="warning"
-    fi
+      github_annotation="$severity"
+      if [[ $github_annotation != "error" ]]; then
+        github_annotation="warning"
+      fi
 
-    echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
-  done
+      echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
+    done
 
-  # Capture nonzero exit code for syntax errors etc.
-  SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=${PIPESTATUS[0]}
-else
-  shellcheck "$BREW_SYNC_CHECK" || SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=1
+    # Capture nonzero exit code for syntax errors etc.
+    SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=${PIPESTATUS[0]}
+  else
+    shellcheck "$BREW_SYNC_CHECK" || SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK=1
   fi
   echo
 }
@@ -445,7 +481,7 @@ print_summary_to_console() {
   printf "%b" "$OUTPUT_CONSOLE" | column -t -s $'\t'
 }
 
-print_summary_to_gh_workflow () {
+print_summary_to_gh_workflow() {
   if $CI_MODE; then
     {
       echo "### 📝 Lint／Format Summary"
@@ -471,6 +507,7 @@ main() {
   setup_signal_handling
   declare_global_variables
   parse_script_flags "$@"
+  verify_nix_environment
   change_to_project_root
 
   require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$SCRIPT" "$BREW_SYNC_CHECK"
