@@ -96,6 +96,21 @@ parse_script_flags() {
   done
 }
 
+change_to_project_root() {
+  # Ensure this script runs from the project root.
+  declare -g PROJECT_ROOT
+  PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+  if [ -z "${PROJECT_ROOT:-}" ]; then
+    echo "Error: could not determine project root directory (are you in a Git repository?)" >&2
+    exit 1
+  fi
+
+  if ! cd "$PROJECT_ROOT"; then
+    echo "Error: could not change into project root directory (${PROJECT_ROOT##*/})" >&2
+    exit 1
+  fi
+}
+
 require_file() {
   local files=("$@")
   local missing_files=()
@@ -195,18 +210,7 @@ main() {
   declare_global_variables
   setup_signal_handling
   parse_script_flags "$@"
-
-  # Ensure this script runs from the project root.
-  PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-  if [ -z "${PROJECT_ROOT:-}" ]; then
-    echo "Error: could not determine project root directory (are you in a Git repository?)" >&2
-    exit 1
-  fi
-
-  if ! cd "$PROJECT_ROOT"; then
-    echo "Error: could not change into project root directory (${PROJECT_ROOT##*/})" >&2
-    exit 1
-  fi
+  change_to_project_root
 
   require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$SCRIPT" "$BREW_SYNC_CHECK"
 
