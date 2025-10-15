@@ -3,42 +3,6 @@
 # Exit immediately if any variables are unset.
 set -u
 
-verify_nix_environment() {
-  case "${IN_NIX_SHELL:-}" in
-    pure | impure) return 0 ;;
-  esac
-
-  local file
-  file="$SCRIPT"
-
-  local ci_suffix=""
-  local error_prefix
-  if $CI_MODE; then
-    ci_suffix=" --ci"
-    error_prefix="::error file=${file}::"
-  else
-    error_prefix="Error:"
-  fi
-
-  local message
-  message=$(
-    cat <<-EOF
-${file} must be run inside a Nix flake development shell.
-
-To enter the environment, run:
-  > nix develop
-  > ./scripts/lint.sh${ci_suffix}
-
-Or run this script directly from a temporary dev shell, like so:
-  > nix develop .#adhoc --command ./scripts/lint.sh${ci_suffix}
-EOF
-  )
-
-  printf '%s %s\n' "$error_prefix" "$message" >&2
-
-  exit 1
-}
-
 declare_global_variables() {
   # Target files:
   declare -g \
@@ -111,6 +75,42 @@ setup_signal_handling() {
 
   # Handle the EXIT signal for any script termination.
   trap cleanup EXIT
+}
+
+verify_nix_environment() {
+  case "${IN_NIX_SHELL:-}" in
+    pure | impure) return 0 ;;
+  esac
+
+  local file
+  file="$SCRIPT"
+
+  local ci_suffix=""
+  local error_prefix
+  if $CI_MODE; then
+    ci_suffix=" --ci"
+    error_prefix="::error file=${file}::"
+  else
+    error_prefix="Error:"
+  fi
+
+  local message
+  message=$(
+    cat <<-EOF
+${file} must be run inside a Nix flake development shell.
+
+To enter the environment, run:
+  > nix develop
+  > ./scripts/lint.sh${ci_suffix}
+
+Or run this script directly from a temporary dev shell, like so:
+  > nix develop .#adhoc --command ./scripts/lint.sh${ci_suffix}
+EOF
+  )
+
+  printf '%s %s\n' "$error_prefix" "$message" >&2
+
+  exit 1
 }
 
 parse_script_flags() {
