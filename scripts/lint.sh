@@ -56,15 +56,20 @@ cleanup() {
   #   ∙ EXIT    : Normal script exit
 
   # Exit with the status of the command that triggered this trap.
-  local status="${?:-0}"
+  local status="$?"
+  (( "$status" == 0 )) && status="$EXIT_CODE"
 
-  [[ "$status" -eq 0 ]] && status="$EXIT_CODE"
+  local snapshots=(
+    "${BREWFILE_SNAPSHOT:-}"
+    "${NIX_FLAKE_FILE_SNAPSHOT:-}"
+    "${README_SNAPSHOT:-}"
+    "${SCRIPT_SNAPSHOT:-}"
+    "${BREW_SYNC_CHECK_SNAPSHOT:-}"
+  )
 
-  [[ -f "${BREWFILE_SNAPSHOT:-}" ]] && rm "$BREWFILE_SNAPSHOT"
-  [[ -f "${NIX_FLAKE_FILE_SNAPSHOT:-}" ]] && rm "$NIX_FLAKE_FILE_SNAPSHOT"
-  [[ -f "${README_SNAPSHOT:-}" ]] && rm "$README_SNAPSHOT"
-  [[ -f "${SCRIPT_SNAPSHOT:-}" ]] && rm "$SCRIPT_SNAPSHOT"
-  [[ -f "${BREW_SYNC_CHECK_SNAPSHOT:-}" ]] && rm "$BREW_SYNC_CHECK_SNAPSHOT"
+  for s in "${snapshots[@]}"; do
+    [[ -f "$s" ]] && rm -- "$s"
+  done
 
   exit "$status"
 }
