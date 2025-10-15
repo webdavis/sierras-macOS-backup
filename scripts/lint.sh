@@ -252,6 +252,7 @@ run_nixfmt() {
   echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  NIXFMT (FORMATTING)  ┃"
   echo "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
+  echo
   echo "📌 [Info]"
   echo "───────────"
   echo "nixfmt path: $(command -v treefmt)"
@@ -273,6 +274,7 @@ run_rubocop() {
   echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
   echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+  echo
   echo "📌 [Info]"
   echo "───────────"
   echo "RuboCop path: $(bundle exec command -v rubocop)"
@@ -295,6 +297,7 @@ run_mdformat() {
   echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  MDFORMAT (FORMATTING)  ┃"
   echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+  echo
   echo "📌 [Info]"
   echo "───────────"
   echo "mdformat path: $(command -v mdformat)"
@@ -318,6 +321,7 @@ run_shellcheck() {
   echo "┏━━━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  SHELLCHECK (LINTING)  ┃"
   echo "┗━━━━━━━━━━━━━━━━━━━━━━━━┛"
+  echo
   echo "📌 [Info]"
   echo "───────────"
   echo "shellcheck path: $(command -v shellcheck)"
@@ -379,6 +383,7 @@ run_shfmt() {
   echo "┏━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  SHFMT (FORMATTING)  ┃"
   echo "┗━━━━━━━━━━━━━━━━━━━━━━┛"
+  echo
   echo "📌 [Info]"
   echo "───────────"
   echo "shfmt path: $(command -v shfmt)"
