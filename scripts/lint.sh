@@ -237,9 +237,7 @@ max_field_length() {
     IFS="$delimiter" read -r -a fields <<<"$item"
     field="${fields[$index]}"
 
-    # Trim leading/trailing whitespace
-    field="${field#"${field%%[![:space:]]*}"}"
-    field="${field%"${field##*[![:space:]]}"}"
+    field="$(trim "$field")"
 
     length=${#field}
 
