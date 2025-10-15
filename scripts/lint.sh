@@ -96,11 +96,11 @@ cleanup() {
 
   [[ "$status" -eq 0 ]] && status="$EXIT_CODE"
 
-  [ -f "${BREWFILE_SNAPSHOT:-}" ] && rm "$BREWFILE_SNAPSHOT"
-  [ -f "${NIX_FLAKE_FILE_SNAPSHOT:-}" ] && rm "$NIX_FLAKE_FILE_SNAPSHOT"
-  [ -f "${README_SNAPSHOT:-}" ] && rm "$README_SNAPSHOT"
-  [ -f "${SCRIPT_SNAPSHOT:-}" ] && rm "$SCRIPT_SNAPSHOT"
-  [ -f "${BREW_SYNC_CHECK_SNAPSHOT:-}" ] && rm "$BREW_SYNC_CHECK_SNAPSHOT"
+  [[ -f "${BREWFILE_SNAPSHOT:-}" ]] && rm "$BREWFILE_SNAPSHOT"
+  [[ -f "${NIX_FLAKE_FILE_SNAPSHOT:-}" ]] && rm "$NIX_FLAKE_FILE_SNAPSHOT"
+  [[ -f "${README_SNAPSHOT:-}" ]] && rm "$README_SNAPSHOT"
+  [[ -f "${SCRIPT_SNAPSHOT:-}" ]] && rm "$SCRIPT_SNAPSHOT"
+  [[ -f "${BREW_SYNC_CHECK_SNAPSHOT:-}" ]] && rm "$BREW_SYNC_CHECK_SNAPSHOT"
 
   exit "$status"
 }
@@ -143,7 +143,7 @@ change_to_project_root() {
   # Ensure this script runs from the project root.
   declare -g PROJECT_ROOT
   PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-  if [ -z "${PROJECT_ROOT:-}" ]; then
+  if [[ -z "${PROJECT_ROOT:-}" ]]; then
     echo "Error: could not determine project root directory (are you in a Git repository?)" >&2
     exit 1
   fi
@@ -160,7 +160,7 @@ require_file() {
 
   local file
   for file in "${files[@]}"; do
-    if [ ! -f "$file" ]; then
+    if [[ ! -f "$file" ]]; then
       missing_files+=("$file")
     fi
   done
@@ -197,7 +197,7 @@ git_diff_section() {
   local tool="$3"
   local tool_status="$4"
 
-  if [ "$tool_status" -eq 1 ]; then
+  if [[ "$tool_status" -eq 1 ]]; then
     if $CI_MODE; then
       echo "::error file=${file}::${tool}: detected formatting/linting issues in ${file}. See diff below ↓"
 
@@ -356,7 +356,7 @@ run_shellcheck() {
   echo
 
   echo "Running shellcheck on '${BREW_SYNC_CHECK}' (linting)..."
-  if [ "${CI_MODE:-false}" = "true" ]; then
+  if $CI_MODE; then
     shellcheck --format=gcc "$BREW_SYNC_CHECK" 2>&1 | while IFS=: read -r file line column severity message; do
       file=$(trim "$file")
       line=$(trim "$line")
