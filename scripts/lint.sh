@@ -575,7 +575,7 @@ generate_output_reference() {
   return "$status"
 }
 
-print_summary_to_console() {
+print_to_console() {
   local output="$1"
   printf "%b" "$output" | column -t -s $'\t'
 }
@@ -611,7 +611,7 @@ print_summary() {
   if $ci_mode; then
     write_to_githuh_step_summary "$(format_table output_ref table_fields markdown_header markdown_row)"
   else
-    print_summary_to_console "$(format_table output_ref table_fields console_header console_row)"
+    print_to_console "$(format_table output_ref table_fields console_header console_row)"
   fi
 
   return "$status"
