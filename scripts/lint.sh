@@ -132,10 +132,10 @@ Alternatively, you can run this script ad hoc without entering the shell:
 }
 
 ensure_nix_shell() {
-  in_nix_dev_shell && return 0
+  local file="$1"
+  local ci_mode="$2"
 
-  local file="$SCRIPT"
-  local ci_mode="$CI_MODE"
+  in_nix_dev_shell && return 0
 
   local error_prefix ci_suffix
   read -r error_prefix ci_suffix <<< "$(generate_error_mode_metadata "$file" "$ci_mode")"
@@ -146,13 +146,12 @@ ensure_nix_shell() {
 }
 
 parse_script_flags() {
-  declare -g CI_MODE
-  CI_MODE=false
+  local ci_mode=false
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --ci)
-        CI_MODE=true
+        ci_mode=true
         shift
         ;;
       --) # End of options.
@@ -169,6 +168,8 @@ parse_script_flags() {
         ;;
     esac
   done
+
+  echo "$ci_mode"
 }
 
 change_to_project_root() {
@@ -228,9 +229,10 @@ git_diff_section() {
   local file="$2"
   local tool="$3"
   local tool_status="$4"
+  local ci_mode="$5"
 
   if [[ "$tool_status" -eq 1 ]]; then
-    if $CI_MODE; then
+    if $ci_mode; then
       echo "::error file=${file}::${tool}: detected formatting/linting issues in ${file}. See diff below ↓"
 
       echo "::group::📝 [Diff] → '${file}'"
@@ -280,6 +282,8 @@ max_field_length() {
 }
 
 run_nixfmt() {
+  local ci_mode="$1"
+
   echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  NIXFMT (FORMATTING)  ┃"
   echo "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
@@ -298,10 +302,12 @@ run_nixfmt() {
   nix fmt -- --ci --quiet "$NIX_FLAKE_FILE" || NIXFMT_EXIT_CODE=1
   echo
 
-  git_diff_section "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE" "Nixfmt" "$NIXFMT_EXIT_CODE"
+  git_diff_section "$NIX_FLAKE_FILE_SNAPSHOT" "$NIX_FLAKE_FILE" "Nixfmt" "$NIXFMT_EXIT_CODE" "$ci_mode"
 }
 
 run_rubocop() {
+  local ci_mode="$1"
+
   echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
   echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
@@ -321,10 +327,12 @@ run_rubocop() {
   bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$BREWFILE" || RUBOCOP_EXIT_CODE=1
   echo
 
-  git_diff_section "$BREWFILE_SNAPSHOT" "$BREWFILE" "RuboCop" "$RUBOCOP_EXIT_CODE"
+  git_diff_section "$BREWFILE_SNAPSHOT" "$BREWFILE" "RuboCop" "$RUBOCOP_EXIT_CODE" "$ci_mode"
 }
 
 run_mdformat() {
+  local ci_mode="$1"
+
   echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  MDFORMAT (FORMATTING)  ┃"
   echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━┛"
@@ -345,10 +353,12 @@ run_mdformat() {
   mdformat "$README"
   echo
 
-  git_diff_section "$README_SNAPSHOT" "$README" "Mdformat" "$MDFORMAT_EXIT_CODE"
+  git_diff_section "$README_SNAPSHOT" "$README" "Mdformat" "$MDFORMAT_EXIT_CODE" "$ci_mode"
 }
 
 run_shellcheck() {
+  local ci_mode="$1"
+
   echo "┏━━━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  SHELLCHECK (LINTING)  ┃"
   echo "┗━━━━━━━━━━━━━━━━━━━━━━━━┛"
@@ -362,7 +372,7 @@ run_shellcheck() {
   echo "🛠️ [Execution]"
   echo "────────────────"
   echo "Running shellcheck on '${SCRIPT}' (linting)..."
-  if $CI_MODE; then
+  if $ci_mode; then
     shellcheck --format=gcc "$SCRIPT" 2>&1 | while IFS=: read -r file line column severity message; do
       file=$(trim "$file")
       line=$(trim "$line")
@@ -386,7 +396,7 @@ run_shellcheck() {
   echo
 
   echo "Running shellcheck on '${BREW_SYNC_CHECK}' (linting)..."
-  if $CI_MODE; then
+  if $ci_mode; then
     shellcheck --format=gcc "$BREW_SYNC_CHECK" 2>&1 | while IFS=: read -r file line column severity message; do
       file=$(trim "$file")
       line=$(trim "$line")
@@ -411,6 +421,8 @@ run_shellcheck() {
 }
 
 run_shfmt() {
+  local ci_mode="$1"
+
   echo "┏━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  SHFMT (FORMATTING)  ┃"
   echo "┗━━━━━━━━━━━━━━━━━━━━━━┛"
@@ -433,13 +445,13 @@ run_shfmt() {
   shfmt -i 2 -ci -s --diff "$SCRIPT" >/dev/null 2>&1 || SHFMT_EXIT_CODE_SCRIPT=1
   shfmt -i 2 -ci -s --write "$SCRIPT"
   echo
-  git_diff_section "$SCRIPT_SNAPSHOT" "$SCRIPT" "shfmt" "$SHFMT_EXIT_CODE_SCRIPT"
+  git_diff_section "$SCRIPT_SNAPSHOT" "$SCRIPT" "shfmt" "$SHFMT_EXIT_CODE_SCRIPT" "$ci_mode"
 
   echo "Running shfmt on '${BREW_SYNC_CHECK}' (applying formatting)..."
   shfmt -i 2 -ci -s --diff "$BREW_SYNC_CHECK" >/dev/null 2>&1 || SHFMT_EXIT_CODE_BREW_SYNC_CHECK=1
   shfmt -i 2 -ci -s --write "$BREW_SYNC_CHECK"
   echo
-  git_diff_section "$BREW_SYNC_CHECK_SNAPSHOT" "$BREW_SYNC_CHECK" "shfmt" "$SHFMT_EXIT_CODE_BREW_SYNC_CHECK"
+  git_diff_section "$BREW_SYNC_CHECK_SNAPSHOT" "$BREW_SYNC_CHECK" "shfmt" "$SHFMT_EXIT_CODE_BREW_SYNC_CHECK" "$ci_mode"
 }
 
 build_tool_statuses() {
@@ -518,7 +530,9 @@ print_summary_to_console() {
 }
 
 print_summary_to_gh_workflow() {
-  if $CI_MODE; then
+  local ci_mode="$1"
+
+  if $ci_mode; then
     {
       echo "### 📝 Lint／Format Summary"
       echo ""
@@ -528,6 +542,8 @@ print_summary_to_gh_workflow() {
 }
 
 print_summary() {
+  local ci_mode="$1"
+
   echo "┏━━━━━━━━━━━┓"
   echo "┃  SUMMARY  ┃"
   echo "┗━━━━━━━━━━━┛"
@@ -536,25 +552,27 @@ print_summary() {
   build_tool_statuses
   generate_summary_output
   print_summary_to_console
-  print_summary_to_gh_workflow
+  print_summary_to_gh_workflow "$ci_mode"
 }
 
 main() {
   setup_signal_handling
   declare_global_variables
-  parse_script_flags "$@"
-  ensure_nix_shell
+
+  local ci_mode
+  ci_mode="$(ci_parse_script_flags "$@")"
+  ensure_nix_shell "$SCRIPT" "$ci_mode"
   change_to_project_root
 
   require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$SCRIPT" "$BREW_SYNC_CHECK"
 
-  run_nixfmt
-  run_rubocop
-  run_mdformat
-  run_shellcheck
-  run_shfmt
+  run_nixfmt "$ci_mode"
+  run_rubocop "$ci_mode"
+  run_mdformat "$ci_mode"
+  run_shellcheck "$ci_mode"
+  run_shfmt "$ci_mode"
 
-  print_summary
+  print_summary "$ci_mode"
 }
 
 main "$@"
