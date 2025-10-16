@@ -114,6 +114,23 @@ generate_error_mode_metadata() {
   echo "$error_prefix" "$ci_suffix"
 }
 
+print_nix_shell_error() {
+  local file="$1"
+  local error_prefix="$2"
+  local ci_suffix="$3"
+
+  local message="${error_prefix} ${file} must be run inside a Nix flake development shell.
+
+To enter the flake shell, run:
+  $ nix develop
+  $ ./${file}${ci_suffix}
+
+Alternatively, you can run this script ad hoc without entering the shell:
+  $ nix develop .#adhoc --command ./${file}${ci_suffix}"
+
+  printf "%s\n" "$message" >&2
+}
+
 verify_nix_environment() {
   in_nix_dev_shell && return 0
 
@@ -123,21 +140,7 @@ verify_nix_environment() {
   local error_prefix ci_suffix
   read -r error_prefix ci_suffix <<< "$(generate_error_mode_metadata "$file" "$ci_mode")"
 
-  local message
-  message=$(
-    cat <<-EOF
-${file} must be run inside a Nix flake development shell.
-
-To enter the environment, run:
-  > nix develop
-  > ./scripts/lint.sh${ci_suffix}
-
-Or run this script directly from a temporary dev shell, like so:
-  > nix develop .#adhoc --command ./scripts/lint.sh${ci_suffix}
-EOF
-  )
-
-  printf '%s %s\n' "$error_prefix" "$message" >&2
+  print_nix_shell_error "$file" "$error_prefix" "$ci_suffix"
 
   exit 1
 }
