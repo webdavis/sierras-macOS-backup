@@ -348,9 +348,21 @@ print_section_title() {
   echo
 }
 
-print_info_header() {
+print_tool_info() {
+  local tool="$1"
+
   echo "📌 [Info]"
   echo "───────────"
+
+  if [[ "$tool" == "rubocop" ]]; then
+    echo "${tool} path: $(bundle exec command -v rubocop)"
+    echo "${tool} version: $(bundle exec "$tool" --version)"
+  else
+    echo "${tool} path: $(command -v "${tool}")"
+    echo "${tool} version: $("${tool}" -- --version)"
+  fi
+
+  echo
 }
 
 print_execution_header() {
@@ -364,10 +376,7 @@ run_nixfmt() {
   local project_root="$3"
 
   print_section_title "NIXFMT (FORMATTING)"
-  print_info_header
-  echo "nixfmt path: $(command -v treefmt)"
-  echo "nixfmt version: $(nix fmt -- --version)"
-  echo
+  print_tool_info "treefmt"
 
   local snapshot
   snapshot="$(file_snapshot "$file" ".flake.nix" "$project_root")"
@@ -391,10 +400,7 @@ run_rubocop() {
   local project_root="$3"
 
   print_section_title "RUBOCOP (LINTING & FORMATTING)"
-  print_info_header
-  echo "RuboCop path: $(bundle exec command -v rubocop)"
-  echo "RuboCop version: $(bundle exec rubocop -v)"
-  echo
+  print_tool_info "rubocop"
 
   local snapshot
   snapshot="$(file_snapshot "$file" ".brewfile" "$project_root")"
@@ -418,10 +424,7 @@ run_mdformat() {
   local project_root="$3"
 
   print_section_title "MDFORMAT (FORMATTING)"
-  print_info_header
-  echo "mdformat path: $(command -v mdformat)"
-  echo "mdformat version: $(mdformat --version)"
-  echo
+  print_tool_info "mdformat"
 
   local snapshot
   snapshot="$(file_snapshot "$file" ".readme.md" "$project_root")"
@@ -445,10 +448,7 @@ run_shellcheck() {
   local script="$2"
 
   print_section_title "SHELLCHECK (LINTING)"
-  print_info_header
-  echo "shellcheck path: $(command -v shellcheck)"
-  echo "shellcheck version: $(shellcheck --version | awk '/^version:/ {print $2}')"
-  echo
+  print_tool_info "shellcheck"
 
   print_execution_header
   echo "Running shellcheck on '${script}' (linting)..."
@@ -488,10 +488,7 @@ run_shfmt() {
   local project_root="$3"
 
   print_section_title "SHFMT (FORMATTING)"
-  print_info_header
-  echo "shfmt path: $(command -v shfmt)"
-  echo "shfmt version: $(shfmt --version)"
-  echo
+  print_tool_info "shfmt"
 
   local snapshot
   snapshot="$(file_snapshot "$file" ".${file##*/}" "$project_root")"
