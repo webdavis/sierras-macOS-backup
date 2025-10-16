@@ -47,7 +47,7 @@ cleanup() {
   #   ∙ EXIT    : Normal script exit
 
   # Exit with the status of the command that triggered this trap.
-  local status="$?"
+  local exit_status="${1:-$?}"
 
   disable_all_traps
 
@@ -55,15 +55,15 @@ cleanup() {
     [[ -f "$s" ]] && rm -- "$s"
   done
 
-  exit "$status"
+  exit "$exit_status"
 }
 
 setup_signal_handling() {
   # Handle process interruption signals.
-  trap cleanup SIGINT SIGTERM
+  trap 'cleanup $?' SIGINT SIGTERM
 
   # Handle the EXIT signal for any script termination.
-  trap cleanup EXIT
+  trap 'cleanup $?' EXIT
 }
 
 in_nix_dev_shell() {
