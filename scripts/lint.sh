@@ -464,8 +464,9 @@ run_all_tools() {
 }
 
 build_tool_statuses() {
-  local -n files="$1"
-  local -n exit_codes="$2"
+  local -n tool_statuses="$1"
+  local -n files="$2"
+  local -n exit_codes="$3"
 
   local script_basename="${files[this_script]##*/}"
   local brew_sync_check_file="${files[brew_sync_check]##*/}"
@@ -480,7 +481,7 @@ build_tool_statuses() {
   #    - File Path : The file being checked (e.g., flake.nix, dot_Brewfile)
   #    - Exit Code : The result of the tool execution ($? for that tool)
   #
-  TOOL_STATUSES=(
+  tool_statuses=(
     "Nixfmt     : ${files[nix_flake]}     : ${exit_codes[Nixfmt]}"
     "RuboCop    : ${files[brewfile]}      : ${exit_codes[RuboCop]}"
     "Mdformat   : ${files[readme]}        : ${exit_codes[Mdformat]}"
@@ -491,30 +492,74 @@ build_tool_statuses() {
   )
 }
 
-generate_summary_output() {
+console_header() {
+  local -n table_fields="$1"
+  local -n output_ref="$2"
+
   # Generate a dynamic separator.
   local max_tool_length max_file_length
-  max_tool_length=$(max_field_length 0 ":" "${TOOL_STATUSES[@]}")
-  max_file_length=$(max_field_length 1 ":" "${TOOL_STATUSES[@]}")
+  max_tool_length=$(max_field_length 0 ":" "${output_ref[@]}")
+  max_file_length=$(max_field_length 1 ":" "${output_ref[@]}")
 
   local tool_separator file_separator
   tool_separator="$(printf '%*s' "$max_tool_length" '' | tr ' ' '-')"
   file_separator="$(printf '%*s' "$max_file_length" '' | tr ' ' '-')"
 
+  local output="${table_fields[0]}\t${table_fields[1]}\t${table_fields[2]}\n"
+  output+="${tool_separator}\t${file_separator}\t-------\n"
+
+  printf "%b" "$output"
+}
+
+console_row() {
+  local tool="$1"
+  local file="$2"
+  local checkmark="$3"
+  printf "%b" "${tool}\t${file}\t${checkmark}\n"
+}
+
+markdown_header() {
+  local -n table_fields="$1"
+
+  local output="| ${table_fields[0]} | ${table_fields[1]} | ${table_fields[2]} |\n"
+  output+="| --- | --- | --- |\n"
+
+  printf "%b" "$output"
+}
+
+markdown_row() {
+  local tool="$1"
+  local file="$2"
+  local checkmark="$3"
+  printf "%b" "| ${tool} | \`${file}\` | ${checkmark} |\n"
+}
+
+format_table() {
+  local -n output_ref="$1"
+  local -n table_fields="$2"
+  local header_formatter="$3"
+  local row_formatter="$4"
+
+  local output
+  output="$("$header_formatter" table_fields output_ref)"
+
+  local entry tool file checkmark
+  for entry in "${output_ref[@]}"; do
+    IFS=":" read -r tool file checkmark <<<"$entry"
+    output+="$("$row_formatter" "$tool" "$file" "$checkmark")"
+  done
+
+  printf "%b" "$output"
+}
+
+generate_output_reference() {
+  local -n tool_statuses="$1"
+  local -n output_ref="$2"
+
   local status=0
 
-  local field1="Tool"
-  local field2="File"
-  local field3="Result"
-
-  OUTPUT_MD="| ${field1} | ${field2} | ${field3} |\n"
-  OUTPUT_MD+="---|---|---|\n"
-
-  OUTPUT_CONSOLE="${field1}\t${field2}\t${field3}\n"
-  OUTPUT_CONSOLE+="${tool_separator}\t${file_separator}\t-------\n"
-
   local entry tool file code
-  for entry in "${TOOL_STATUSES[@]}"; do
+  for entry in "${tool_statuses[@]}"; do
     IFS=":" read -r tool file code <<<"$entry"
 
     # Trim whitespace:
@@ -529,34 +574,28 @@ generate_summary_output() {
       checkmark="✅"
     fi
 
-    OUTPUT_MD+="| ${tool} | \`${file}\` | ${checkmark} |\n"
-
-    OUTPUT_CONSOLE+="${tool}\t${file}\t${checkmark}\n"
+    output_ref+=("${tool}:${file}:${checkmark}")
   done
-  OUTPUT_CONSOLE+="${tool_separator}\t${file_separator}\t-------\n"
 
   return "$status"
 }
 
 print_summary_to_console() {
-  printf "%b" "$OUTPUT_CONSOLE" | column -t -s $'\t'
+  local output="$1"
+  printf "%b" "$output" | column -t -s $'\t'
 }
 
 print_summary_to_gh_workflow() {
-  local ci_mode="$1"
-
-  if $ci_mode; then
-    {
-      echo "### 📝 Lint／Format Summary"
-      echo ""
-      printf "%b" "$OUTPUT_MD"
-    } >>"$GITHUB_STEP_SUMMARY"
-  fi
+  local output="$1"
+  {
+    echo "### 📝 Lint／Format Summary"
+    echo ""
+    printf "%b" "$output"
+  } >>"$GITHUB_STEP_SUMMARY"
 }
 
 print_summary() {
   local ci_mode="$1"
-
   local -n files="$2"
   local -n exit_codes="$3"
 
@@ -565,13 +604,20 @@ print_summary() {
   echo "┗━━━━━━━━━━━┛"
   echo
 
-  build_tool_statuses files exit_codes
+  declare -a tool_statuses
+  build_tool_statuses tool_statuses files exit_codes
 
+  local -a output_ref
   local status
-  generate_summary_output || status="$?"
+  generate_output_reference tool_statuses output_ref || status="$?"
 
-  print_summary_to_console
-  print_summary_to_gh_workflow "$ci_mode"
+  local -a table_fields=("Tool" "File" "Result")
+
+  if $ci_mode; then
+    print_summary_to_gh_workflow "$(format_table output_ref table_fields markdown_header markdown_row)"
+  else
+    print_summary_to_console "$(format_table output_ref table_fields console_header console_row)"
+  fi
 
   return "$status"
 }
