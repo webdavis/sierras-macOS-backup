@@ -644,7 +644,7 @@ print_to_console() {
   printf "%b" "$output" | column -t -s $'\t'
 }
 
-write_to_githuh_step_summary() {
+write_to_github_step_summary() {
   local output="$1"
   {
     echo "### 📝 Lint／Format Summary"
@@ -670,7 +670,7 @@ print_summary() {
   local -a table_fields=("Tool" "File" "Result")
 
   if $ci_mode; then
-    write_to_githuh_step_summary "$(format_table output_ref table_fields markdown_header markdown_row)"
+    write_to_github_step_summary "$(format_table output_ref table_fields markdown_header markdown_row)"
   else
     print_to_console "$(format_table output_ref table_fields console_header console_row)"
   fi
