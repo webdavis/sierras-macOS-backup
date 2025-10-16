@@ -96,20 +96,32 @@ in_nix_dev_shell() {
   esac
 }
 
+generate_error_mode_metadata() {
+  local file="$1"
+  local ci_mode="$2"
+
+  local error_prefix
+  local ci_suffix
+
+  if $ci_mode; then
+    error_prefix="::error file=${file}::"
+    ci_suffix=" --ci"
+  else
+    error_prefix="Error:"
+    ci_suffix=""
+  fi
+
+  echo "$error_prefix" "$ci_suffix"
+}
+
 verify_nix_environment() {
   in_nix_dev_shell && return 0
 
-  local file
-  file="$SCRIPT"
+  local file="$SCRIPT"
+  local ci_mode="$CI_MODE"
 
-  local ci_suffix=""
-  local error_prefix
-  if $CI_MODE; then
-    ci_suffix=" --ci"
-    error_prefix="::error file=${file}::"
-  else
-    error_prefix="Error:"
-  fi
+  local error_prefix ci_suffix
+  read -r error_prefix ci_suffix <<< "$(generate_error_mode_metadata "$file" "$ci_mode")"
 
   local message
   message=$(
