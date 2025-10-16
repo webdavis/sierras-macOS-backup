@@ -329,7 +329,7 @@ repeat() {
   done
 }
 
-print_title_header() {
+print_section_title() {
   local title="$1"
 
   local title_length="${#title}"
@@ -363,7 +363,7 @@ run_nixfmt() {
   local file="$2"
   local project_root="$3"
 
-  print_title_header "NIXFMT (FORMATTING)"
+  print_section_title "NIXFMT (FORMATTING)"
   print_info_header
   echo "nixfmt path: $(command -v treefmt)"
   echo "nixfmt version: $(nix fmt -- --version)"
@@ -390,7 +390,7 @@ run_rubocop() {
   local file="$2"
   local project_root="$3"
 
-  print_title_header "RUBOCOP (LINTING & FORMATTING)"
+  print_section_title "RUBOCOP (LINTING & FORMATTING)"
   print_info_header
   echo "RuboCop path: $(bundle exec command -v rubocop)"
   echo "RuboCop version: $(bundle exec rubocop -v)"
@@ -417,7 +417,7 @@ run_mdformat() {
   local file="$2"
   local project_root="$3"
 
-  print_title_header "MDFORMAT (FORMATTING)"
+  print_section_title "MDFORMAT (FORMATTING)"
   print_info_header
   echo "mdformat path: $(command -v mdformat)"
   echo "mdformat version: $(mdformat --version)"
@@ -444,7 +444,7 @@ run_shellcheck() {
   local ci_mode="$1"
   local script="$2"
 
-  print_title_header "SHELLCHECK (LINTING)"
+  print_section_title "SHELLCHECK (LINTING)"
   print_info_header
   echo "shellcheck path: $(command -v shellcheck)"
   echo "shellcheck version: $(shellcheck --version | awk '/^version:/ {print $2}')"
@@ -487,7 +487,7 @@ run_shfmt() {
   local file="$2"
   local project_root="$3"
 
-  print_title_header "SHFMT (FORMATTING)"
+  print_section_title "SHFMT (FORMATTING)"
   print_info_header
   echo "shfmt path: $(command -v shfmt)"
   echo "shfmt version: $(shfmt --version)"
@@ -658,7 +658,7 @@ print_summary() {
   local -n files="$2"
   local -n exit_codes="$3"
 
-  print_title_header "SUMMARY"
+  print_section_title "SUMMARY"
 
   declare -a tool_statuses
   build_tool_statuses tool_statuses files exit_codes
