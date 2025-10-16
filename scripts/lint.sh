@@ -131,7 +131,7 @@ Alternatively, you can run this script ad hoc without entering the shell:
   printf "%s\n" "$message" >&2
 }
 
-verify_nix_environment() {
+ensure_nix_shell() {
   in_nix_dev_shell && return 0
 
   local file="$SCRIPT"
@@ -543,7 +543,7 @@ main() {
   setup_signal_handling
   declare_global_variables
   parse_script_flags "$@"
-  verify_nix_environment
+  ensure_nix_shell
   change_to_project_root
 
   require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$SCRIPT" "$BREW_SYNC_CHECK"
