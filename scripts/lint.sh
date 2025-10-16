@@ -577,29 +577,31 @@ print_summary() {
 }
 
 main() {
-  local args=("$@")
-
+  # --- Setup ---
   setup_signal_handling
 
+  local args=("$@")
+  local ci_mode
+  ci_mode="$(parse_script_flags "${args[@]}")"
+
+  # --- Load project context ---
   declare -A files
   get_project_files files
 
   declare -A exit_codes
   get_tool_exit_codes exit_codes
 
-  local ci_mode
-  ci_mode="$(parse_script_flags "${args[@]}")"
-
-  ensure_nix_shell "${files[this_script]}" "$ci_mode"
-
   local project_root
   project_root="$(get_project_root)"
   change_to_project_root "$project_root"
 
+  ensure_nix_shell "${files[this_script]}" "$ci_mode"
   require_file files "$project_root"
 
+  # --- Run all tools ---
   run_all_tools "$ci_mode" "$project_root" files exit_codes
 
+  # --- Summarize results ---
   local status=0
   print_summary "$ci_mode" files exit_codes || status="$?"
 
