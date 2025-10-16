@@ -274,17 +274,51 @@ max_field_length() {
   echo "$max_length"
 }
 
+repeat() {
+  local character="$1"
+  local amount="$2"
+  for _ in $(seq 1 "$amount"); do
+    printf "%s" "$character"
+  done
+}
+
+print_title_header() {
+  local title="$1"
+
+  local title_length="${#title}"
+
+  local padding=2
+  local total_width=$((title_length + padding*2))
+
+  local top bottom middle
+  top="┏$(repeat "━" "$total_width")┓"
+  bottom="┗$(repeat "━" "$total_width")┛"
+
+  middle="┃$(repeat " " "$padding")$title$(repeat " " "$padding")┃"
+
+  echo "$top"
+  echo "$middle"
+  echo "$bottom"
+}
+
+print_info_header() {
+  echo "📌 [Info]"
+  echo "───────────"
+}
+
+print_execution_header() {
+  echo "🛠️ [Execution]"
+  echo "────────────────"
+}
+
 run_nixfmt() {
   local ci_mode="$1"
   local file="$2"
   local project_root="$3"
 
-  echo "┏━━━━━━━━━━━━━━━━━━━━━━━┓"
-  echo "┃  NIXFMT (FORMATTING)  ┃"
-  echo "┗━━━━━━━━━━━━━━━━━━━━━━━┛"
+  print_title_header "NIXFMT (FORMATTING)"
   echo
-  echo "📌 [Info]"
-  echo "───────────"
+  print_info_header
   echo "nixfmt path: $(command -v treefmt)"
   echo "nixfmt version: $(nix fmt -- --version)"
   echo
@@ -292,8 +326,7 @@ run_nixfmt() {
   local snapshot
   snapshot="$(file_snapshot "$file" ".flake.nix" "$project_root")"
 
-  echo "🛠️ [Execution]"
-  echo "────────────────"
+  print_execution_header
   echo "Running nix fmt on '${file}' (applying formatting)..."
 
   local status=0
@@ -311,12 +344,9 @@ run_rubocop() {
   local file="$2"
   local project_root="$3"
 
-  echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
-  echo "┃  RUBOCOP (LINTING & FORMATTING)  ┃"
-  echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+  print_title_header "RUBOCOP (LINTING & FORMATTING)"
   echo
-  echo "📌 [Info]"
-  echo "───────────"
+  print_info_header
   echo "RuboCop path: $(bundle exec command -v rubocop)"
   echo "RuboCop version: $(bundle exec rubocop -v)"
   echo
@@ -324,8 +354,7 @@ run_rubocop() {
   local snapshot
   snapshot="$(file_snapshot "$file" ".brewfile" "$project_root")"
 
-  echo "🛠️ [Execution]"
-  echo "────────────────"
+  print_execution_header
   echo "Running RuboCop on '${file}' (linting, formatting, and applying corrections)..."
 
   local status=0
@@ -343,12 +372,9 @@ run_mdformat() {
   local file="$2"
   local project_root="$3"
 
-  echo "┏━━━━━━━━━━━━━━━━━━━━━━━━━┓"
-  echo "┃  MDFORMAT (FORMATTING)  ┃"
-  echo "┗━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+  print_title_header "MDFORMAT (FORMATTING)"
   echo
-  echo "📌 [Info]"
-  echo "───────────"
+  print_info_header
   echo "mdformat path: $(command -v mdformat)"
   echo "mdformat version: $(mdformat --version)"
   echo
@@ -356,8 +382,7 @@ run_mdformat() {
   local snapshot
   snapshot="$(file_snapshot "$file" ".readme.md" "$project_root")"
 
-  echo "🛠️ [Execution]"
-  echo "────────────────"
+  print_execution_header
   echo "Running mdformat on '${file}' (applying formatting)..."
 
   local status=0
@@ -375,18 +400,14 @@ run_shellcheck() {
   local ci_mode="$1"
   local script="$2"
 
-  echo "┏━━━━━━━━━━━━━━━━━━━━━━━━┓"
-  echo "┃  SHELLCHECK (LINTING)  ┃"
-  echo "┗━━━━━━━━━━━━━━━━━━━━━━━━┛"
+  print_title_header "SHELLCHECK (LINTING)"
   echo
-  echo "📌 [Info]"
-  echo "───────────"
+  print_info_header
   echo "shellcheck path: $(command -v shellcheck)"
   echo "shellcheck version: $(shellcheck --version | awk '/^version:/ {print $2}')"
   echo
 
-  echo "🛠️ [Execution]"
-  echo "────────────────"
+  print_execution_header
   echo "Running shellcheck on '${script}' (linting)..."
 
   local status=0
@@ -423,12 +444,9 @@ run_shfmt() {
   local script="$2"
   local project_root="$3"
 
-  echo "┏━━━━━━━━━━━━━━━━━━━━━━┓"
-  echo "┃  SHFMT (FORMATTING)  ┃"
-  echo "┗━━━━━━━━━━━━━━━━━━━━━━┛"
+  print_title_header "SHFMT (FORMATTING)"
   echo
-  echo "📌 [Info]"
-  echo "───────────"
+  print_info_header
   echo "shfmt path: $(command -v shfmt)"
   echo "shfmt version: $(shfmt --version)"
   echo
@@ -436,8 +454,7 @@ run_shfmt() {
   local snapshot
   snapshot="$(file_snapshot "$script" ".${script##*/}" "$project_root")"
 
-  echo "🛠️ [Execution]"
-  echo "────────────────"
+  print_execution_header
   echo "Running shfmt on '${script}' (applying formatting)..."
 
   local status=0
