@@ -484,7 +484,7 @@ run_shellcheck() {
 
 run_shfmt() {
   local ci_mode="$1"
-  local script="$2"
+  local file="$2"
   local project_root="$3"
 
   print_title_header "SHFMT (FORMATTING)"
@@ -494,15 +494,15 @@ run_shfmt() {
   echo
 
   local snapshot
-  snapshot="$(file_snapshot "$script" ".${script##*/}" "$project_root")"
+  snapshot="$(file_snapshot "$file" ".${file##*/}" "$project_root")"
 
   print_execution_header
-  echo "Running shfmt on '${script}' (applying formatting)..."
+  echo "Running shfmt on '${file}' (applying formatting)..."
 
   local status=0
 
-  shfmt -i 2 -ci -s --diff "$script" >/dev/null 2>&1 || status="$?"
-  shfmt -i 2 -ci -s --write "$script"
+  shfmt -i 2 -ci -s --diff "$file" >/dev/null 2>&1 || status="$?"
+  shfmt -i 2 -ci -s --write "$file"
   echo
 
   [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "shfmt" "$ci_mode"
