@@ -448,6 +448,21 @@ run_shfmt() {
   return "$status"
 }
 
+run_all_tools() {
+  local ci_mode="$1"
+  local project_root="$2"
+  local -n files="$3"
+  local -n exit_codes="$4"
+
+  run_nixfmt "$ci_mode" "${files[nix_flake]}" "$project_root" || exit_codes[Nixfmt]="$?"
+  run_rubocop "$ci_mode" "${files[brewfile]}" "$project_root" || exit_codes[RuboCop]="$?"
+  run_mdformat "$ci_mode" "${files[readme]}" "$project_root" || exit_codes[Mdformat]="$?"
+  run_shellcheck "$ci_mode" "${files[this_script]}" || exit_codes[Shellcheck_this_script]="$?"
+  run_shellcheck "$ci_mode" "${files[brew_sync_check]}" || exit_codes[Shellcheck_brew_sync_check]="$?"
+  run_shfmt "$ci_mode" "${files[this_script]}" "$project_root" || exit_codes[Shfmt_this_script]="$?"
+  run_shfmt "$ci_mode" "${files[brew_sync_check]}" "$project_root" || exit_codes[Shfmt_brew_sync_check]="$?"
+}
+
 build_tool_statuses() {
   local -n files="$1"
   local -n exit_codes="$2"
@@ -583,13 +598,7 @@ main() {
 
   require_file files "$project_root"
 
-  run_nixfmt "$ci_mode" "${files[nix_flake]}" "$project_root" || exit_codes[Nixfmt]="$?"
-  run_rubocop "$ci_mode" "${files[brewfile]}" "$project_root" || exit_codes[RuboCop]="$?"
-  run_mdformat "$ci_mode" "${files[readme]}" "$project_root" || exit_codes[Mdformat]="$?"
-  run_shellcheck "$ci_mode" "${files[this_script]}" || exit_codes[Shellcheck_this_script]="$?"
-  run_shellcheck "$ci_mode" "${files[brew_sync_check]}" || exit_codes[Shellcheck_brew_sync_check]="$?"
-  run_shfmt "$ci_mode" "${files[this_script]}" "$project_root" || exit_codes[Shfmt_this_script]="$?"
-  run_shfmt "$ci_mode" "${files[brew_sync_check]}" "$project_root" || exit_codes[Shfmt_brew_sync_check]="$?"
+  run_all_tools "$ci_mode" "$project_root" files exit_codes
 
   local status=0
   print_summary "$ci_mode" files exit_codes || status="$?"
