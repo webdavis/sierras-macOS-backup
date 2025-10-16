@@ -219,26 +219,30 @@ git_diff_section() {
   local snapshot="$1"
   local file="$2"
   local tool="$3"
-  local tool_status="$4"
-  local ci_mode="$5"
+  local ci_mode="$4"
 
-  if [[ "$tool_status" -eq 1 ]]; then
-    if $ci_mode; then
-      echo "::error file=${file}::${tool}: detected formatting/linting issues in ${file}. See diff below ↓"
+  local message
 
-      echo "::group::📝 [Diff] → '${file}'"
-      git_diff "$snapshot" "$file" || true
-      echo "::endgroup::"
-    else
-      local red='\033[0;31m'
-      local reset='\033[0m' # No Color
-      echo -e "${red}Error: ${file} has formatting/linting issues. See diff below ↓${reset}"
-      echo "📝 [Diff] → '${file}'"
-      echo "─────────────────────────────"
-      git_diff "$snapshot" "$file"
-      echo
-    fi
+  local prefix suffix
+  if $ci_mode; then
+    prefix="::error file=${file}::"
+    suffix=""
+    message="::group::📝 [Diff] → '${file}'\n"
+    message+="$(git_diff "$snapshot" "$file" || true)"
+    message+="\n::endgroup::"
+  else
+    local red='\033[0;31m'
+    local reset='\033[0m' # No Color
+
+    prefix="${red}Error: "
+    suffix="${reset}"
+    message="📝 [Diff] → '${file}'"
+    message+="─────────────────────────────\n"
+    message+="$(git_diff "$snapshot" "$file")"
   fi
+
+  printf "%s\n" "${prefix}${tool}: detected formatting/linting issues in ${file}. See diff below ↓${suffix}" >&2
+  printf "%b\n\n" "$message" >&2
 }
 
 trim() {
@@ -299,6 +303,7 @@ print_title_header() {
   echo "$top"
   echo "$middle"
   echo "$bottom"
+  echo
 }
 
 print_info_header() {
@@ -317,7 +322,6 @@ run_nixfmt() {
   local project_root="$3"
 
   print_title_header "NIXFMT (FORMATTING)"
-  echo
   print_info_header
   echo "nixfmt path: $(command -v treefmt)"
   echo "nixfmt version: $(nix fmt -- --version)"
@@ -334,7 +338,7 @@ run_nixfmt() {
   nix fmt -- --ci --quiet "$file" || status=$?
   echo
 
-  git_diff_section "$snapshot" "$file" "Nixfmt" "$status" "$ci_mode"
+  [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "Nixfmt" "$ci_mode"
 
   return "$status"
 }
@@ -345,7 +349,6 @@ run_rubocop() {
   local project_root="$3"
 
   print_title_header "RUBOCOP (LINTING & FORMATTING)"
-  echo
   print_info_header
   echo "RuboCop path: $(bundle exec command -v rubocop)"
   echo "RuboCop version: $(bundle exec rubocop -v)"
@@ -362,7 +365,7 @@ run_rubocop() {
   bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$file" || status=$?
   echo
 
-  git_diff_section "$snapshot" "$file" "RuboCop" "$status" "$ci_mode"
+  [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "RuboCop" "$ci_mode"
 
   return "$status"
 }
@@ -373,7 +376,6 @@ run_mdformat() {
   local project_root="$3"
 
   print_title_header "MDFORMAT (FORMATTING)"
-  echo
   print_info_header
   echo "mdformat path: $(command -v mdformat)"
   echo "mdformat version: $(mdformat --version)"
@@ -391,7 +393,7 @@ run_mdformat() {
   mdformat "$file"
   echo
 
-  git_diff_section "$snapshot" "$file" "Mdformat" "$status" "$ci_mode"
+  [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "Mdformat" "$ci_mode"
 
   return "$status"
 }
@@ -401,7 +403,6 @@ run_shellcheck() {
   local script="$2"
 
   print_title_header "SHELLCHECK (LINTING)"
-  echo
   print_info_header
   echo "shellcheck path: $(command -v shellcheck)"
   echo "shellcheck version: $(shellcheck --version | awk '/^version:/ {print $2}')"
@@ -445,7 +446,6 @@ run_shfmt() {
   local project_root="$3"
 
   print_title_header "SHFMT (FORMATTING)"
-  echo
   print_info_header
   echo "shfmt path: $(command -v shfmt)"
   echo "shfmt version: $(shfmt --version)"
@@ -463,7 +463,7 @@ run_shfmt() {
   shfmt -i 2 -ci -s --write "$script"
   echo
 
-  git_diff_section "$snapshot" "$script" "shfmt" "$status" "$ci_mode"
+  [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "shfmt" "$ci_mode"
 
   return "$status"
 }
