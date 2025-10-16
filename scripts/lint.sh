@@ -88,10 +88,16 @@ setup_signal_handling() {
   trap cleanup EXIT
 }
 
-verify_nix_environment() {
+in_nix_dev_shell() {
+  # The IN_NIX_SHELL environment variable is only present in Nix flake dev shells.
   case "${IN_NIX_SHELL:-}" in
     pure | impure) return 0 ;;
+    *) return 1;;
   esac
+}
+
+verify_nix_environment() {
+  in_nix_dev_shell && return 0
 
   local file
   file="$SCRIPT"
