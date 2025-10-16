@@ -468,28 +468,23 @@ build_tool_statuses() {
   local -n files="$2"
   local -n exit_codes="$3"
 
-  local script_basename="${files[this_script]##*/}"
-  local brew_sync_check_file="${files[brew_sync_check]##*/}"
-
-  # TOOL_STATUSES array Format:
-  #
-  #   Tool Name : File Path : Exit Code
-  #
-  # Each entry represents a tool check:
-  #
-  #    - Tool Name : The name of the tool (e.g., Nixfmt, RuboCop)
-  #    - File Path : The file being checked (e.g., flake.nix, dot_Brewfile)
-  #    - Exit Code : The result of the tool execution ($? for that tool)
-  #
-  tool_statuses=(
-    "Nixfmt     : ${files[nix_flake]}     : ${exit_codes[Nixfmt]}"
-    "RuboCop    : ${files[brewfile]}      : ${exit_codes[RuboCop]}"
-    "Mdformat   : ${files[readme]}        : ${exit_codes[Mdformat]}"
-    "Shellcheck : ${script_basename}      : ${exit_codes[Shellcheck_this_script]}"
-    "Shellcheck : ${brew_sync_check_file} : ${exit_codes[Shellcheck_brew_sync_check]}"
-    "shfmt      : ${script_basename}      : ${exit_codes[Shfmt_this_script]}"
-    "shfmt      : ${brew_sync_check_file} : ${exit_codes[Shfmt_brew_sync_check]}"
+  # Map of tools -> file keys:
+  local -A tool_file_map=(
+    [Nixfmt]=nix_flake
+    [RuboCop]=brewfile
+    [Mdformat]=readme
+    [Shellcheck_this_script]=this_script
+    [Shellcheck_brew_sync_check]=brew_sync_check
+    [Shfmt_this_script]=this_script
+    [Shfmt_brew_sync_check]=brew_sync_check
   )
+
+  local key tool file
+  for key in "${!tool_file_map[@]}"; do
+    tool="$key"
+    file="${files[${tool_file_map[$key]}]##*/}"
+    tool_statuses+=("${tool} : ${file} : ${exit_codes[$key]}")
+  done
 }
 
 console_header() {
