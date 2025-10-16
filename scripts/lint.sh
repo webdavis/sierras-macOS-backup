@@ -49,6 +49,10 @@ declare_global_variables() {
   RESET='\033[0m' # No Color
 }
 
+disable_all_traps() {
+  trap - SIGINT SIGTERM EXIT
+}
+
 cleanup() {
   # cleanup is triggered via the trap command in `setup_signal_handling` on the following signals:
   #   ∙ SIGINT  : Interrupt (Ctrl+C)
@@ -58,6 +62,8 @@ cleanup() {
   # Exit with the status of the command that triggered this trap.
   local status="$?"
   (( "$status" == 0 )) && status="$EXIT_CODE"
+
+  disable_all_traps
 
   local snapshots=(
     "${BREWFILE_SNAPSHOT:-}"
