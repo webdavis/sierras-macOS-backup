@@ -296,9 +296,8 @@ print_title_header() {
 
   local top bottom middle
   top="┏$(repeat "━" "$total_width")┓"
+  middle="┃$(repeat " " "$padding")${title}$(repeat " " "$padding")┃"
   bottom="┗$(repeat "━" "$total_width")┛"
-
-  middle="┃$(repeat " " "$padding")$title$(repeat " " "$padding")┃"
 
   echo "$top"
   echo "$middle"
