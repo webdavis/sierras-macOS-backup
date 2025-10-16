@@ -74,6 +74,49 @@ in_nix_dev_shell() {
   esac
 }
 
+verify_rubocop() {
+  if ! bundle exec rubocop --version &>/dev/null; then
+    printf "%s\n\n" "\
+Oops! Looks like you don't have rubocop installed.
+
+Please install it and then try again (e.g. bundle install)" >&2
+
+    return 1
+  fi
+  return 0
+}
+
+verify_tool() {
+  local tool="$1"
+
+  if [[ ! -x "$(builtin command -v "$tool")" ]]; then
+    printf "%s\n\n" "\
+Oops! Looks like you don't have ${tool} installed.
+
+Please install it and then try again (e.g. brew install ${tool})" >&2
+
+    return 1
+  fi
+  return 0
+}
+
+verify_required_tools() {
+  local required_tools=("$@")
+
+  local tool
+  local missing_tool=false
+
+  for tool in "${required_tools[@]}"; do
+    if [[ "$tool" == "rubocop" ]]; then
+      verify_rubocop || missing_tool=true
+    else
+      verify_tool "$tool" || missing_tool=true
+    fi
+  done
+
+  $missing_tool || exit 1
+}
+
 generate_error_mode_metadata() {
   local file="$1"
   local ci_mode="$2"
@@ -472,6 +515,8 @@ run_all_tools() {
   local project_root="$2"
   local -n files="$3"
   local -n exit_codes="$4"
+
+  verify_required_tools "treefmt" "rubocop" "mdformat" "shellcheck" "shfmt"
 
   run_nixfmt "$ci_mode" "${files[nix_flake]}" "$project_root" || exit_codes[Nixfmt]="$?"
   run_rubocop "$ci_mode" "${files[brewfile]}" "$project_root" || exit_codes[RuboCop]="$?"
