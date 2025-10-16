@@ -9,13 +9,11 @@ declare_global_variables() {
     BREWFILE \
     NIX_FLAKE_FILE \
     README \
-    SCRIPT \
     BREW_SYNC_CHECK
 
   BREWFILE="dot_Brewfile"
   NIX_FLAKE_FILE="flake.nix"
   README="README.md"
-  SCRIPT="scripts/lint.sh"
   BREW_SYNC_CHECK="scripts/brew-sync-check.sh"
 
   # Script exit code:
@@ -47,6 +45,10 @@ declare_global_variables() {
 
   RED='\033[0;31m'
   RESET='\033[0m' # No Color
+}
+
+get_script_path() {
+  git ls-files --full-name "${BASH_SOURCE[0]}"
 }
 
 disable_all_traps() {
@@ -358,6 +360,7 @@ run_mdformat() {
 
 run_shellcheck() {
   local ci_mode="$1"
+  local script="$2"
 
   echo "┏━━━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  SHELLCHECK (LINTING)  ┃"
@@ -371,9 +374,9 @@ run_shellcheck() {
 
   echo "🛠️ [Execution]"
   echo "────────────────"
-  echo "Running shellcheck on '${SCRIPT}' (linting)..."
+  echo "Running shellcheck on '${script}' (linting)..."
   if $ci_mode; then
-    shellcheck --format=gcc "$SCRIPT" 2>&1 | while IFS=: read -r file line column severity message; do
+    shellcheck --format=gcc "$script" 2>&1 | while IFS=: read -r file line column severity message; do
       file=$(trim "$file")
       line=$(trim "$line")
       column=$(trim "$column")
@@ -391,7 +394,7 @@ run_shellcheck() {
     # Capture nonzero exit code for syntax errors etc.
     SHELLCHECK_EXIT_CODE_SCRIPT=${PIPESTATUS[0]}
   else
-    shellcheck "$SCRIPT" || SHELLCHECK_EXIT_CODE_SCRIPT=1
+    shellcheck "$script" || SHELLCHECK_EXIT_CODE_SCRIPT=1
   fi
   echo
 
@@ -422,6 +425,7 @@ run_shellcheck() {
 
 run_shfmt() {
   local ci_mode="$1"
+  local script="$2"
 
   echo "┏━━━━━━━━━━━━━━━━━━━━━━┓"
   echo "┃  SHFMT (FORMATTING)  ┃"
@@ -434,18 +438,18 @@ run_shfmt() {
   echo
 
   declare -g SCRIPT_SNAPSHOT
-  SCRIPT_SNAPSHOT="$(file_snapshot "$SCRIPT" ".lint.sh")"
+  SCRIPT_SNAPSHOT="$(file_snapshot "$script" ".${script##*/}")"
 
   declare -g BREW_SYNC_CHECK_SNAPSHOT
   BREW_SYNC_CHECK_SNAPSHOT="$(file_snapshot "$BREW_SYNC_CHECK" ".brew_sync_check.sh")"
 
   echo "🛠️ [Execution]"
   echo "────────────────"
-  echo "Running shfmt on '${SCRIPT}' (applying formatting)..."
-  shfmt -i 2 -ci -s --diff "$SCRIPT" >/dev/null 2>&1 || SHFMT_EXIT_CODE_SCRIPT=1
-  shfmt -i 2 -ci -s --write "$SCRIPT"
+  echo "Running shfmt on '${script}' (applying formatting)..."
+  shfmt -i 2 -ci -s --diff "$script" >/dev/null 2>&1 || SHFMT_EXIT_CODE_SCRIPT=1
+  shfmt -i 2 -ci -s --write "$script"
   echo
-  git_diff_section "$SCRIPT_SNAPSHOT" "$SCRIPT" "shfmt" "$SHFMT_EXIT_CODE_SCRIPT" "$ci_mode"
+  git_diff_section "$SCRIPT_SNAPSHOT" "$script" "shfmt" "$SHFMT_EXIT_CODE_SCRIPT" "$ci_mode"
 
   echo "Running shfmt on '${BREW_SYNC_CHECK}' (applying formatting)..."
   shfmt -i 2 -ci -s --diff "$BREW_SYNC_CHECK" >/dev/null 2>&1 || SHFMT_EXIT_CODE_BREW_SYNC_CHECK=1
@@ -455,8 +459,10 @@ run_shfmt() {
 }
 
 build_tool_statuses() {
-  local script_file brew_sync_check_file
-  script_file="${SCRIPT##*/}"
+  local script="$1"
+
+  local script_basename brew_sync_check_file
+  script_basename="${script##*/}"
   brew_sync_check_file="${BREW_SYNC_CHECK##*/}"
 
   # TOOL_STATUSES array Format:
@@ -473,9 +479,9 @@ build_tool_statuses() {
     "Nixfmt     : $NIX_FLAKE_FILE         : $NIXFMT_EXIT_CODE"
     "RuboCop    : $BREWFILE               : $RUBOCOP_EXIT_CODE"
     "Mdformat   : $README                 : $MDFORMAT_EXIT_CODE"
-    "Shellcheck : ${script_file}          : $SHELLCHECK_EXIT_CODE_SCRIPT"
+    "Shellcheck : ${script_basename}      : $SHELLCHECK_EXIT_CODE_SCRIPT"
     "Shellcheck : ${brew_sync_check_file} : $SHELLCHECK_EXIT_CODE_BREW_SYNC_CHECK"
-    "shfmt      : ${script_file}          : $SHFMT_EXIT_CODE_SCRIPT"
+    "shfmt      : ${script_basename}      : $SHFMT_EXIT_CODE_SCRIPT"
     "shfmt      : ${brew_sync_check_file} : $SHFMT_EXIT_CODE_BREW_SYNC_CHECK"
   )
 }
@@ -543,36 +549,40 @@ print_summary_to_gh_workflow() {
 
 print_summary() {
   local ci_mode="$1"
+  local script="$2"
 
   echo "┏━━━━━━━━━━━┓"
   echo "┃  SUMMARY  ┃"
   echo "┗━━━━━━━━━━━┛"
   echo
 
-  build_tool_statuses
+  build_tool_statuses "$script"
   generate_summary_output
   print_summary_to_console
   print_summary_to_gh_workflow "$ci_mode"
 }
 
 main() {
+  local script
+  script="$(get_script_path)"
+
   setup_signal_handling
   declare_global_variables
 
   local ci_mode
   ci_mode="$(ci_parse_script_flags "$@")"
-  ensure_nix_shell "$SCRIPT" "$ci_mode"
+  ensure_nix_shell "$script" "$ci_mode"
   change_to_project_root
 
-  require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$SCRIPT" "$BREW_SYNC_CHECK"
+  require_file "$BREWFILE" "$NIX_FLAKE_FILE" "$README" "$script" "$BREW_SYNC_CHECK"
 
   run_nixfmt "$ci_mode"
   run_rubocop "$ci_mode"
   run_mdformat "$ci_mode"
-  run_shellcheck "$ci_mode"
-  run_shfmt "$ci_mode"
+  run_shellcheck "$ci_mode" "$script"
+  run_shfmt "$ci_mode" "$script"
 
-  print_summary "$ci_mode"
+  print_summary "$ci_mode" "$script"
 }
 
 main "$@"
