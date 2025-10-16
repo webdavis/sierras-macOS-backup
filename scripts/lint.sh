@@ -658,10 +658,7 @@ print_summary() {
   local -n files="$2"
   local -n exit_codes="$3"
 
-  echo "┏━━━━━━━━━━━┓"
-  echo "┃  SUMMARY  ┃"
-  echo "┗━━━━━━━━━━━┛"
-  echo
+  print_title_header "SUMMARY"
 
   declare -a tool_statuses
   build_tool_statuses tool_statuses files exit_codes
