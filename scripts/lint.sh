@@ -379,7 +379,7 @@ run_nixfmt() {
   print_tool_info "treefmt"
 
   local snapshot
-  snapshot="$(file_snapshot "$file" ".flake.nix" "$project_root")"
+  snapshot="$(file_snapshot "$file" ".${file}" "$project_root")"
 
   print_execution_header
   echo "Running nix fmt on '${file}' (applying formatting)..."
@@ -403,7 +403,7 @@ run_rubocop() {
   print_tool_info "rubocop"
 
   local snapshot
-  snapshot="$(file_snapshot "$file" ".brewfile" "$project_root")"
+  snapshot="$(file_snapshot "$file" ".${file}" "$project_root")"
 
   print_execution_header
   echo "Running RuboCop on '${file}' (linting, formatting, and applying corrections)..."
@@ -427,7 +427,7 @@ run_mdformat() {
   print_tool_info "mdformat"
 
   local snapshot
-  snapshot="$(file_snapshot "$file" ".readme.md" "$project_root")"
+  snapshot="$(file_snapshot "$file" ".${file}" "$project_root")"
 
   print_execution_header
   echo "Running mdformat on '${file}' (applying formatting)..."
