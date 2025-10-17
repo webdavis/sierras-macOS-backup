@@ -607,7 +607,7 @@ print_summary() {
   build_tool_statuses
 
   local -a output_ref
-  local status
+  local status=0
   generate_output_reference || status="$?"
 
   local -a table_fields=("Tool" "File" "Result")
