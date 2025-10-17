@@ -361,7 +361,7 @@ print_tool_info() {
     echo "${tool} version: $(bundle exec "$tool" --version)"
   else
     echo "${tool} path: $(command -v "${tool}")"
-    echo "${tool} version: $("${tool}" -- --version)"
+    echo "${tool} version: $("${tool}" --version)"
   fi
 
   echo
