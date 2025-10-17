@@ -464,8 +464,8 @@ run_all_tools() {
   verify_required_tools "treefmt" "rubocop" "mdformat" "shellcheck" "shfmt"
 
   local runners=(
-    "${FILES[nix_flake]}|NIXFMT (FORMATTING)|treefmt|nix_flake|nix fmt -- --ci --quiet"
-    "${FILES[brewfile]}|RUBOCOP (LINTING & FORMATTING)|rubocop|rubocop|bundle exec rubocop --display-time --autocorrect --fail-level autocorrect --"
+    "${FILES[nix_flake]}|NIXFMT (FORMATTING)|treefmt|nix_flake|nixfmt_runner"
+    "${FILES[brewfile]}|RUBOCOP (LINTING & FORMATTING)|rubocop|rubocop|rubocop_runner"
     "${FILES[readme]}|MDFORMAT (FORMATTING)|mdformat|mdformat|mdformat_runner"
     "${FILES[this_script]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_this_script|shellcheck_runner|$ci_mode|${FILES[this_script]}"
     "${FILES[brew_sync_check]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_brew_sync_check|shellcheck_runner|$ci_mode|${FILES[brew_sync_check]}"
@@ -473,14 +473,16 @@ run_all_tools() {
     "${FILES[brew_sync_check]}|SHFMT (FORMATTING)|shfmt|shfmt_brew_sync_check|shfmt_runner"
   )
 
-  local entry file title tool exit_status runner rest
+  local entry file title tool exit_code runner arg1 arg2
   for entry in "${runners[@]}"; do
-    IFS='|' read -r file title tool status runner rest <<<"$entry"
+    IFS='|' read -r file title tool exit_code runner arg1 arg2 <<<"$entry"
 
-    read -r -a cmd <<<"$runner $rest"
+    cmd=("$runner")
+    [[ -n $arg1 ]] && cmd+=("$arg1")
+    [[ -n $arg2 ]] && cmd+=("$arg2")
 
     run_tool "$ci_mode" "$file" "$project_root" "$title" "$tool" "${cmd[@]}" || {
-      EXIT_CODES[$exit_status]="$?"
+      EXIT_CODES[$exit_code]="$?"
     }
   done
 }
