@@ -1,5 +1,22 @@
 #!/usr/bin/env bash
 
+# Helpful references for this script:
+#
+# GitHub Action Workflow Commands:
+#
+#   - When run with the --ci command flag, this script implements GitHub Action workflow
+#     commands to make workflow logs easier to parse (e.g., ::error <args>::). Information on
+#     workflow commands can be found here:
+#     https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands
+#
+# Formatting/Linting Tools and their wiki's:
+#
+#   - Nixfmt (specifically nixfmt-tree): https://github.com/NixOS/nixfmt
+#   - RuboCop: https://docs.rubocop.org/rubocop/1.81/index.html
+#   - Mdformat: https://mdformat.readthedocs.io/en/stable/
+#   - Shellcheck: https://github.com/koalaman/shellcheck/wiki
+#   - shfmt: https://github.com/patrickvane/shfmt
+
 # Exit immediately if any variables are unset.
 set -u
 
