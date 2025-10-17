@@ -4,13 +4,17 @@
 # Exit immediately if any variables are unset.
 set -u
 
+# Global arrays used to hold script metadata:
+declare -A FILES
+declare -A EXIT_CODES
+declare -a TOOL_STATUSES
+
 # Global array used to hold temporary snapshot files for pre- and post-lint/format comparisons.
 # These snapshots are automatically removed up when this script exits via cleanup().
 declare -a SNAPSHOTS
 
-get_project_files() {
-  local -n files="$1"
-  files=(
+set_project_files() {
+  FILES=(
     [nix_flake]="flake.nix"
     [brewfile]="dot_Brewfile"
     [readme]="README.md"
@@ -19,9 +23,8 @@ get_project_files() {
   )
 }
 
-get_tool_exit_codes() {
-  local -n exit_codes="$1"
-  exit_codes=(
+set_tool_exit_codes() {
+  EXIT_CODES=(
     [nixfmt]=0
     [rubocop]=0
     [mdformat]=0
@@ -213,13 +216,12 @@ change_to_project_root() {
 }
 
 require_file() {
-  local -n files=$1
-  local project_root="$2"
+  local project_root="$1"
 
   local missing_files=()
 
   local file
-  for file in "${files[@]}"; do
+  for file in "${FILES[@]}"; do
     if [[ ! -f "$file" ]]; then
       missing_files+=("$file")
     fi
@@ -371,12 +373,12 @@ print_execution_header() {
 }
 
 run_tool() {
-  local ci_mode="$2"
-  local file="$3"
-  local project_root="$4"
-  local title="$5"
-  local tool="$6"
-  shift 6
+  local ci_mode="$1"
+  local file="$2"
+  local project_root="$3"
+  local title="$4"
+  local tool="$5"
+  shift 5
   local -a command=("$@")
 
   print_section_title "$title"
@@ -458,19 +460,17 @@ shfmt_runner() {
 run_all_tools() {
   local ci_mode="$1"
   local project_root="$2"
-  local -n files="$3"
-  local -n exit_codes="$4"
 
   verify_required_tools "treefmt" "rubocop" "mdformat" "shellcheck" "shfmt"
 
   local runners=(
-    "${files[nix_flake]}|NIXFMT (FORMATTING)|treefmt|nix_flake|nix fmt -- --ci --quiet"
-    "${files[brewfile]}|RUBOCOP (LINTING & FORMATTING)|rubocop|rubocop|bundle exec rubocop --display-time --autocorrect --fail-level autocorrect --"
-    "${files[readme]}|MDFORMAT (FORMATTING)|mdformat|mdformat|mdformat_runner"
-    "${files[this_script]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_this_script|shellcheck_runner|$ci_mode|${files[this_script]}"
-    "${files[brew_sync_check]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_brew_sync_check|shellcheck_runner|$ci_mode|${files[brew_sync_check]}"
-    "${files[this_script]}|SHFMT (FORMATTING)|shfmt|shfmt_this_script|shfmt_runner"
-    "${files[brew_sync_check]}|SHFMT (FORMATTING)|shfmt|shfmt_brew_sync_check|shfmt_runner"
+    "${FILES[nix_flake]}|NIXFMT (FORMATTING)|treefmt|nix_flake|nix fmt -- --ci --quiet"
+    "${FILES[brewfile]}|RUBOCOP (LINTING & FORMATTING)|rubocop|rubocop|bundle exec rubocop --display-time --autocorrect --fail-level autocorrect --"
+    "${FILES[readme]}|MDFORMAT (FORMATTING)|mdformat|mdformat|mdformat_runner"
+    "${FILES[this_script]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_this_script|shellcheck_runner|$ci_mode|${FILES[this_script]}"
+    "${FILES[brew_sync_check]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_brew_sync_check|shellcheck_runner|$ci_mode|${FILES[brew_sync_check]}"
+    "${FILES[this_script]}|SHFMT (FORMATTING)|shfmt|shfmt_this_script|shfmt_runner"
+    "${FILES[brew_sync_check]}|SHFMT (FORMATTING)|shfmt|shfmt_brew_sync_check|shfmt_runner"
   )
 
   local entry file title tool exit_status runner rest
@@ -480,16 +480,12 @@ run_all_tools() {
     read -r -a cmd <<<"$runner $rest"
 
     run_tool "$ci_mode" "$file" "$project_root" "$title" "$tool" "${cmd[@]}" || {
-      exit_codes[$exit_status]="$?"
+      EXIT_CODES[$exit_status]="$?"
     }
   done
 }
 
 build_tool_statuses() {
-  local -n tool_statuses="$1"
-  local -n files="$2"
-  local -n exit_codes="$3"
-
   # Map of tools -> file keys:
   local -A tool_file_map=(
     [nixfmt]=nix_flake
@@ -504,15 +500,12 @@ build_tool_statuses() {
   local key tool file
   for key in "${!tool_file_map[@]}"; do
     tool="$key"
-    file="${files[${tool_file_map[$key]}]##*/}"
-    tool_statuses+=("${tool} : ${file} : ${exit_codes[$key]}")
+    file="${FILES[${tool_file_map[$key]}]##*/}"
+    TOOL_STATUSES+=("${tool} : ${file} : ${EXIT_CODES[$key]}")
   done
 }
 
 console_header() {
-  local -n table_fields="$1"
-  local -n output_ref="$2"
-
   # Generate a dynamic separator.
   local max_tool_length max_file_length
   max_tool_length=$(max_field_length 0 ":" "${output_ref[@]}")
@@ -536,8 +529,6 @@ console_row() {
 }
 
 markdown_header() {
-  local -n table_fields="$1"
-
   local output="| ${table_fields[0]} | ${table_fields[1]} | ${table_fields[2]} |\n"
   output+="| --- | --- | --- |\n"
 
@@ -552,13 +543,11 @@ markdown_row() {
 }
 
 format_table() {
-  local -n output_ref="$1"
-  local -n table_fields="$2"
-  local header_formatter="$3"
-  local row_formatter="$4"
+  local header_formatter="$1"
+  local row_formatter="$2"
 
   local output
-  output="$("$header_formatter" table_fields output_ref)"
+  output="$("$header_formatter")"
 
   local entry tool file checkmark
   for entry in "${output_ref[@]}"; do
@@ -570,13 +559,10 @@ format_table() {
 }
 
 generate_output_reference() {
-  local -n tool_statuses="$1"
-  local -n output_ref="$2"
-
   local status=0
 
   local entry tool file code
-  for entry in "${tool_statuses[@]}"; do
+  for entry in "${TOOL_STATUSES[@]}"; do
     IFS=":" read -r tool file code <<<"$entry"
 
     # Trim whitespace:
@@ -613,24 +599,21 @@ write_to_github_step_summary() {
 
 print_summary() {
   local ci_mode="$1"
-  local -n files="$2"
-  local -n exit_codes="$3"
 
   print_section_title "SUMMARY"
 
-  declare -a tool_statuses
-  build_tool_statuses tool_statuses files exit_codes
+  build_tool_statuses
 
   local -a output_ref
   local status
-  generate_output_reference tool_statuses output_ref || status="$?"
+  generate_output_reference || status="$?"
 
   local -a table_fields=("Tool" "File" "Result")
 
   if $ci_mode; then
-    write_to_github_step_summary "$(format_table output_ref table_fields markdown_header markdown_row)"
+    write_to_github_step_summary "$(format_table markdown_header markdown_row)"
   else
-    print_to_console "$(format_table output_ref table_fields console_header console_row)"
+    print_to_console "$(format_table console_header console_row)"
   fi
 
   return "$status"
@@ -645,25 +628,23 @@ main() {
   ci_mode="$(parse_script_flags "${args[@]}")"
 
   # --- Load project context ---
-  declare -A files
-  get_project_files files
+  set_project_files
 
-  declare -A exit_codes
-  get_tool_exit_codes exit_codes
+  set_tool_exit_codes
 
   local project_root
   project_root="$(get_project_root)"
   change_to_project_root "$project_root"
 
-  ensure_nix_shell "${files[this_script]}" "$ci_mode"
-  require_file files "$project_root"
+  ensure_nix_shell "${FILES[this_script]}" "$ci_mode"
+  require_file "$project_root"
 
   # --- Run all tools ---
-  run_all_tools "$ci_mode" "$project_root" files exit_codes
+  run_all_tools "$ci_mode" "$project_root"
 
   # --- Summarize results ---
   local status=0
-  print_summary "$ci_mode" files exit_codes || status="$?"
+  print_summary "$ci_mode" || status="$?"
 
   return "$status"
 }
