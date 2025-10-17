@@ -587,7 +587,7 @@ generate_output_reference() {
 
 print_to_console() {
   local output="$1"
-  printf "%b" "$output" | column -t -s $'\t'
+  printf "%b\n" "$output" | column -t -s $'\t' -c 200
 }
 
 write_to_github_step_summary() {
