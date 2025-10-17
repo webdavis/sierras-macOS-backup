@@ -22,13 +22,13 @@ get_project_files() {
 get_tool_exit_codes() {
   local -n exit_codes="$1"
   exit_codes=(
-    [Nixfmt]=0
-    [RuboCop]=0
-    [Mdformat]=0
-    [Shellcheck_this_script]=0
-    [Shellcheck_brew_sync_check]=0
-    [Shfmt_this_script]=0
-    [Shfmt_brew_sync_check]=0
+    [nixfmt]=0
+    [rubocop]=0
+    [mdformat]=0
+    [shellcheck_this_script]=0
+    [shellcheck_brew_sync_check]=0
+    [shfmt_this_script]=0
+    [shfmt_brew_sync_check]=0
   )
 }
 
@@ -370,139 +370,87 @@ print_execution_header() {
   echo "────────────────"
 }
 
-run_nixfmt() {
-  local ci_mode="$1"
-  local file="$2"
-  local project_root="$3"
+run_tool() {
+  local ci_mode="$2"
+  local file="$3"
+  local project_root="$4"
+  local title="$5"
+  local tool="$6"
+  shift 6
+  local -a command=("$@")
 
-  print_section_title "NIXFMT (FORMATTING)"
-  print_tool_info "treefmt"
-
-  local snapshot
-  snapshot="$(file_snapshot "$file" ".${file}" "$project_root")"
-
-  print_execution_header
-  echo "Running nix fmt on '${file}' (applying formatting)..."
-
-  local status=0
-
-  nix fmt -- --ci --quiet "$file" || status=$?
-  echo
-
-  [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "Nixfmt" "$ci_mode"
-
-  return "$status"
-}
-
-run_rubocop() {
-  local ci_mode="$1"
-  local file="$2"
-  local project_root="$3"
-
-  print_section_title "RUBOCOP (LINTING & FORMATTING)"
-  print_tool_info "rubocop"
-
-  local snapshot
-  snapshot="$(file_snapshot "$file" ".${file}" "$project_root")"
-
-  print_execution_header
-  echo "Running RuboCop on '${file}' (linting, formatting, and applying corrections)..."
-
-  local status=0
-
-  bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$file" || status=$?
-  echo
-
-  [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "RuboCop" "$ci_mode"
-
-  return "$status"
-}
-
-run_mdformat() {
-  local ci_mode="$1"
-  local file="$2"
-  local project_root="$3"
-
-  print_section_title "MDFORMAT (FORMATTING)"
-  print_tool_info "mdformat"
-
-  local snapshot
-  snapshot="$(file_snapshot "$file" ".${file}" "$project_root")"
-
-  print_execution_header
-  echo "Running mdformat on '${file}' (applying formatting)..."
-
-  local status=0
-
-  mdformat --check "$file" || status="$?"
-  mdformat "$file"
-  echo
-
-  [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "Mdformat" "$ci_mode"
-
-  return "$status"
-}
-
-run_shellcheck() {
-  local ci_mode="$1"
-  local script="$2"
-
-  print_section_title "SHELLCHECK (LINTING)"
-  print_tool_info "shellcheck"
-
-  print_execution_header
-  echo "Running shellcheck on '${script}' (linting)..."
-
-  local status=0
-
-  if $ci_mode; then
-    local file line column severity message
-    shellcheck --format=gcc "$script" 2>&1 | while IFS=: read -r file line column severity message; do
-      file=$(trim "$file")
-      line=$(trim "$line")
-      column=$(trim "$column")
-      severity=$(trim "$severity")
-      message=$(trim "$message")
-
-      local github_annotation="$severity"
-      if [[ $github_annotation != "error" ]]; then
-        github_annotation="warning"
-      fi
-
-      echo "::${github_annotation} file=${file},line=${line},col=${column}::${file}:${line}:${column}: ${severity}: ${message}"
-    done
-
-    # Capture nonzero exit code for syntax errors etc.
-    status="${PIPESTATUS[0]}"
-  else
-    shellcheck "$script" || status="$?"
-  fi
-  echo
-
-  return "$status"
-}
-
-run_shfmt() {
-  local ci_mode="$1"
-  local file="$2"
-  local project_root="$3"
-
-  print_section_title "SHFMT (FORMATTING)"
-  print_tool_info "shfmt"
+  print_section_title "$title"
+  print_tool_info "$tool"
 
   local snapshot
   snapshot="$(file_snapshot "$file" ".${file##*/}" "$project_root")"
 
   print_execution_header
-  echo "Running shfmt on '${file}' (applying formatting)..."
+  printf 'Running %s on %s...\n' "${tool}" "${file}"
 
   local status=0
 
-  shfmt -i 2 -ci -s --diff "$file" >/dev/null 2>&1 || status="$?"
-  shfmt -i 2 -ci -s --write "$file"
+  "${command[@]}" "$file" || status=$?
+
   echo
 
-  [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "shfmt" "$ci_mode"
+  [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "$tool" "$ci_mode"
+
+  return "$status"
+}
+
+nixfmt_runner() {
+  local file="$1"
+  local status=0
+  nix fmt -- --ci --quiet "$file" || status="$?"
+  return "$status"
+}
+
+rubocop_runner() {
+  local file="$1"
+  local status=0
+  bundle exec rubocop --display-time --autocorrect --fail-level autocorrect -- "$file" || status="$?"
+  return "$status"
+}
+
+mdformat_runner() {
+  local file="$1"
+  local status=0
+  mdformat --check "$file" || status="$?"
+  mdformat "$file"
+  return "$status"
+}
+
+shellcheck_runner() {
+  local ci_mode="$1"
+  local file="$2"
+
+  local status=0
+  if $ci_mode; then
+    local f line column severity message
+    shellcheck --format=gcc "$file" 2>&1 | while IFS=: read -r f line column severity message; do
+      f=$(trim "$f")
+      line=$(trim "$line")
+      column=$(trim "$column")
+      severity=$(trim "$severity")
+      message=$(trim "$message")
+      [[ $severity != error ]] && severity="warning"
+      echo "::${severity} file=${f},line=${line},col=${column}::${f}:${line}:${column}: ${severity}: ${message}"
+    done
+    status="${PIPESTATUS[0]}"
+  else
+    shellcheck "$file" || status=$?
+  fi
+
+  return "$status"
+}
+
+shfmt_runner() {
+  local file="$1"
+  local status=0
+
+  shfmt -i 2 -ci -s --diff "$file" >/dev/null 2>&1 || status=$?
+  shfmt -i 2 -ci -s --write "$file"
 
   return "$status"
 }
@@ -515,13 +463,26 @@ run_all_tools() {
 
   verify_required_tools "treefmt" "rubocop" "mdformat" "shellcheck" "shfmt"
 
-  run_nixfmt "$ci_mode" "${files[nix_flake]}" "$project_root" || exit_codes[Nixfmt]="$?"
-  run_rubocop "$ci_mode" "${files[brewfile]}" "$project_root" || exit_codes[RuboCop]="$?"
-  run_mdformat "$ci_mode" "${files[readme]}" "$project_root" || exit_codes[Mdformat]="$?"
-  run_shellcheck "$ci_mode" "${files[this_script]}" || exit_codes[Shellcheck_this_script]="$?"
-  run_shellcheck "$ci_mode" "${files[brew_sync_check]}" || exit_codes[Shellcheck_brew_sync_check]="$?"
-  run_shfmt "$ci_mode" "${files[this_script]}" "$project_root" || exit_codes[Shfmt_this_script]="$?"
-  run_shfmt "$ci_mode" "${files[brew_sync_check]}" "$project_root" || exit_codes[Shfmt_brew_sync_check]="$?"
+  local runners=(
+    "${files[nix_flake]}|NIXFMT (FORMATTING)|treefmt|nix_flake|nix fmt -- --ci --quiet"
+    "${files[brewfile]}|RUBOCOP (LINTING & FORMATTING)|rubocop|rubocop|bundle exec rubocop --display-time --autocorrect --fail-level autocorrect --"
+    "${files[readme]}|MDFORMAT (FORMATTING)|mdformat|mdformat|mdformat_runner"
+    "${files[this_script]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_this_script|shellcheck_runner|$ci_mode|${files[this_script]}"
+    "${files[brew_sync_check]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_brew_sync_check|shellcheck_runner|$ci_mode|${files[brew_sync_check]}"
+    "${files[this_script]}|SHFMT (FORMATTING)|shfmt|shfmt_this_script|shfmt_runner"
+    "${files[brew_sync_check]}|SHFMT (FORMATTING)|shfmt|shfmt_brew_sync_check|shfmt_runner"
+  )
+
+  local entry file title tool exit_status runner rest
+  for entry in "${runners[@]}"; do
+    IFS='|' read -r file title tool status runner rest <<<"$entry"
+
+    read -r -a cmd <<<"$runner $rest"
+
+    run_tool "$ci_mode" "$file" "$project_root" "$title" "$tool" "${cmd[@]}" || {
+      exit_codes[$exit_status]="$?"
+    }
+  done
 }
 
 build_tool_statuses() {
@@ -531,13 +492,13 @@ build_tool_statuses() {
 
   # Map of tools -> file keys:
   local -A tool_file_map=(
-    [Nixfmt]=nix_flake
-    [RuboCop]=brewfile
-    [Mdformat]=readme
-    [Shellcheck_this_script]=this_script
-    [Shellcheck_brew_sync_check]=brew_sync_check
-    [Shfmt_this_script]=this_script
-    [Shfmt_brew_sync_check]=brew_sync_check
+    [nixfmt]=nix_flake
+    [rubocop]=brewfile
+    [mdformat]=readme
+    [shellcheck_this_script]=this_script
+    [shellcheck_brew_sync_check]=brew_sync_check
+    [shfmt_this_script]=this_script
+    [shfmt_brew_sync_check]=brew_sync_check
   )
 
   local key tool file
