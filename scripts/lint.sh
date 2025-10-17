@@ -276,14 +276,14 @@ git_diff_section() {
     local red='\033[0;31m'
     local reset='\033[0m' # No Color
 
-    prefix="${red}Error: "
+    prefix="${red}Error:"
     suffix="${reset}"
-    message="📝 [Diff] → '${file}'"
+    message="📝 [Diff] → '${file}'\n"
     message+="─────────────────────────────\n"
     message+="$(git_diff "$snapshot" "$file")"
   fi
 
-  printf "%s\n" "${prefix}${tool}: detected formatting/linting issues in ${file}. See diff below ↓${suffix}" >&2
+  printf "%b\n\n" "${prefix} ${tool} detected formatting/linting issues in ${file}. See diff below ↓${suffix}" >&2
   printf "%b\n\n" "$message" >&2
 }
 
