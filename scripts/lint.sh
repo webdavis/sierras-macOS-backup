@@ -107,17 +107,17 @@ verify_required_tools() {
   local required_tools=("$@")
 
   local tool
-  local missing_tool=false
+  local missing_tool=0
 
   for tool in "${required_tools[@]}"; do
-    if [[ "$tool" == "rubocop" ]]; then
-      verify_rubocop || missing_tool=true
+    if [[ $tool == "rubocop" ]]; then
+      verify_rubocop || missing_tool=1
     else
-      verify_tool "$tool" || missing_tool=true
+      verify_tool "$tool" || missing_tool=1
     fi
   done
 
-  $missing_tool || exit 1
+  ((missing_tool)) && exit 1
 }
 
 generate_error_mode_metadata() {
