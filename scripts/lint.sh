@@ -499,11 +499,21 @@ build_tool_statuses() {
     [shfmt_brew_sync_check]=brew_sync_check
   )
 
+  local ordered_tools=(
+    nixfmt
+    rubocop
+    mdformat
+    shellcheck_this_script
+    shellcheck_brew_sync_check
+    shfmt_this_script
+    shfmt_brew_sync_check
+  )
+
   local key tool file
-  for key in "${!tool_file_map[@]}"; do
+  for key in "${ordered_tools[@]}"; do
     tool="$key"
     file="${FILES[${tool_file_map[$key]}]##*/}"
-    TOOL_STATUSES+=("${tool} : ${file} : ${EXIT_CODES[$key]}")
+    TOOL_STATUSES+=("${tool}:${file}:${EXIT_CODES[$key]}")
   done
 }
 
