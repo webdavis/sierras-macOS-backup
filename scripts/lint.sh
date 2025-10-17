@@ -626,6 +626,7 @@ print_summary() {
 
   if $ci_mode; then
     write_to_github_step_summary "$(format_table markdown_header markdown_row)"
+    print_to_console "$(format_table console_header console_row)"
   else
     print_to_console "$(format_table console_header console_row)"
   fi
