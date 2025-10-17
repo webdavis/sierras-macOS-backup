@@ -4,17 +4,17 @@
 # Sierra's ~/.Brewfile
 # —————————————————————
 
-# ┌─────────────────────────────┐
-# │   🛠️ Utilities (formulae)   │
-# └─────────────────────────────┘
+# ┌───────────────────────────┐
+# │  🛠️ Utilities (formulae)  │
+# └───────────────────────────┘
 brew 'neovim' # Preferred console based editor.
 brew 'git' # Version control tracking.
 brew 'chezmoi' # Dotfile manager.
 brew 'croc' # Simple way to securely transfer secrets between computers.
 
-# ┌───────────────────────────────┐
-# │   🖥️ /Applications/ (casks)   │
-# └───────────────────────────────┘
+# ┌─────────────────────────────┐
+# │  🖥️ /Applications/ (casks)  │
+# └─────────────────────────────┘
 cask 'arc' # A better web browser.
 cask 'chatgpt' # OpenAI's official ChatGPT desktop app.
 cask 'microsoft-office' # Microsoft's official Office suite (Word, Excel, etc).
@@ -23,3 +23,16 @@ cask 'obsidian' # My note taking app.
 cask 'raycast' # Spotlight replacement.
 cask 'spotify' # Music streaming service.
 cask 'warp' # Terminal with AI integration.
+
+# ┌────────────────────────────────────────────┐
+# │  ⬆️ Automatic Upgrades (domt4/autoupdate)  │
+# └────────────────────────────────────────────┘
+# domt4/autoupdate:
+tap 'domt4/autoupdate'
+
+# Use Ruby scripting to safely restart domt4/autoupdate after tapping.
+at_exit do
+  system('${HOMEBREW_PREFIX}/bin/brew autoupdate stop')
+  system('${HOMEBREW_PREFIX}/bin/brew autoupdate delete')
+  system('${HOMEBREW_PREFIX}/bin/brew autoupdate start 86400 --upgrade --cleanup --immediate --sudo')
+end
