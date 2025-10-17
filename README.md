@@ -18,26 +18,40 @@ As of *October 8, 2025*
 
 ## Setup
 
-This project tracks Sierra's personal configuration files, managed by
-[Chezmoi](https://www.chezmoi.io/).
+This project tracks Sierra's personal configuration files, managed using the following tools:
 
-### Dotfiles via Chezmoi
+- [Chezmoi](https://www.chezmoi.io/) — for dotfile and configuration management.
+- [Homebrew](https://brew.sh/) — for package and app management.
 
-To use these dotfiles:
+### Installation
+
+1. **Install Homebrew**
+
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
 
 1. **Install Chezmoi**
 
    Follow the instructions for `macOS` at
-   [https://www.chezmoi.io/install/](https://www.chezmoi.io/install/)
+   [https://www.chezmoi.io/install/](https://www.chezmoi.io/install/), or simply run:
 
    ```bash
    brew install chezmoi
    ```
 
-1. **Initialize Chezmoi with this repository**
+1. **Download and Apply this Configuration using Chezmoi**
 
    ```bash
    chezmoi init --apply https://github.com/webdavis/sierras-macOS-backup.git
+   ```
+
+1. **Install Homebrew Apps**
+
+   This project tracks Sierra's apps using a `Brewfile`. Install them, like so:
+
+   ```bash
+   brew bundle install --global
    ```
 
 ## Development Environment
