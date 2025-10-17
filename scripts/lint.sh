@@ -239,18 +239,15 @@ require_file() {
 }
 
 file_snapshot() {
-  local reference_var="$1"
-  local file="$2"
-  local file_suffix="$3"
-  local project_root="$4"
+  local file="$1"
+  local file_suffix="$2"
+  local project_root="$3"
 
   local snapshot
   snapshot="$(mktemp -p "$project_root" --suffix "$file_suffix")"
   cp "$file" "$snapshot"
 
-  SNAPSHOTS+=("$snapshot")
-
-  eval "$reference_var='$snapshot'"
+  echo "$snapshot"
 }
 
 git_diff() {
@@ -384,8 +381,9 @@ run_tool() {
   print_section_title "$title"
   print_tool_info "$tool"
 
-  local snapshot
-  file_snapshot snapshot "$file" ".${file##*/}" "$project_root"
+  local snapshot=""
+  snapshot="$(file_snapshot "$file" ".${file##*/}" "$project_root")"
+  SNAPSHOTS+=("$snapshot")
 
   print_execution_header
   printf 'Running %s on %s...\n' "${tool}" "${file}"
