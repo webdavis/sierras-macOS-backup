@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2178
 
 # Exit immediately if any variables are unset.
 set -u
