@@ -55,7 +55,7 @@ cleanup() {
   disable_all_traps
 
   for s in "${SNAPSHOTS[@]:-}"; do
-    [[ -f "$s" ]] && rm -- "$s"
+    [[ -f $s ]] && rm -- "$s"
   done
 
   exit "$exit_status"
@@ -73,7 +73,7 @@ in_nix_dev_shell() {
   # The IN_NIX_SHELL environment variable is only present in Nix flake dev shells.
   case "${IN_NIX_SHELL:-}" in
     pure | impure) return 0 ;;
-    *) return 1;;
+    *) return 1 ;;
   esac
 }
 
@@ -162,7 +162,7 @@ ensure_nix_shell() {
   in_nix_dev_shell && return 0
 
   local error_prefix ci_suffix
-  read -r error_prefix ci_suffix <<< "$(generate_error_mode_metadata "$file" "$ci_mode")"
+  read -r error_prefix ci_suffix <<<"$(generate_error_mode_metadata "$file" "$ci_mode")"
 
   print_nix_shell_error "$file" "$error_prefix" "$ci_suffix"
 
@@ -204,7 +204,7 @@ change_to_project_root() {
   # Ensure this script runs from the project root.
   local project_root="$1"
 
-  if [[ -z "${project_root:-}" ]]; then
+  if [[ -z ${project_root:-} ]]; then
     echo "Error: could not determine project root directory (are you in a Git repository?)" >&2
     exit 1
   fi
@@ -222,7 +222,7 @@ require_file() {
 
   local file
   for file in "${FILES[@]}"; do
-    if [[ ! -f "$file" ]]; then
+    if [[ ! -f $file ]]; then
       missing_files+=("$file")
     fi
   done
@@ -337,7 +337,7 @@ print_section_title() {
   local title_length="${#title}"
 
   local padding=2
-  local total_width=$((title_length + padding*2))
+  local total_width=$((title_length + padding * 2))
 
   local top bottom middle
   top="┏$(repeat "━" "$total_width")┓"
@@ -356,7 +356,7 @@ print_tool_info() {
   echo "📌 [Info]"
   echo "───────────"
 
-  if [[ "$tool" == "rubocop" ]]; then
+  if [[ $tool == "rubocop" ]]; then
     echo "${tool} path: $(bundle exec command -v rubocop)"
     echo "${tool} version: $(bundle exec "$tool" --version)"
   else
@@ -396,7 +396,7 @@ run_tool() {
 
   echo
 
-  [[ "$status" -eq 0 ]] || git_diff_section "$snapshot" "$file" "$tool" "$ci_mode"
+  [[ $status -eq 0 ]] || git_diff_section "$snapshot" "$file" "$tool" "$ci_mode"
 
   return "$status"
 }
