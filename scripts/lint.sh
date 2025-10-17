@@ -548,11 +548,13 @@ format_table() {
 
   local output
   output="$("$header_formatter")"
+  output+=$'\n'
 
   local entry tool file checkmark
   for entry in "${output_ref[@]}"; do
     IFS=":" read -r tool file checkmark <<<"$entry"
     output+="$("$row_formatter" "$tool" "$file" "$checkmark")"
+    output+=$'\n'
   done
 
   printf "%b" "$output"
