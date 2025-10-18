@@ -612,12 +612,11 @@ print_to_console() {
 }
 
 write_to_github_step_summary() {
-  local output="$1"
+  local summary="$1"
   {
     echo "### 📝 Lint／Format Summary"
     echo ""
-    printf "%b" "$output"
-    console_summary+="$(get_rows "output_ref" "%s\t%s\t%s")"
+    printf "%b" "$summary"
   } >>"$GITHUB_STEP_SUMMARY"
 }
 
