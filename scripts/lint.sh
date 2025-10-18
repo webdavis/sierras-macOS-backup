@@ -552,11 +552,18 @@ get_console_header() {
   printf "%b" "$output"
 }
 
-console_row() {
-  local tool="$1"
-  local file="$2"
-  local checkmark="$3"
-  printf "%b" "${tool}\t${file}\t${checkmark}\n"
+get_console_rows() {
+  local -n gcr_output_ref="$1"
+
+  local entry tool file checkmark
+
+  for entry in "${gcr_output_ref[@]}"; do
+    IFS=":" read -r tool file checkmark <<<"$entry"
+    output+="${tool}\t${file}\t${checkmark}"
+    output+=$'\n'
+  done
+
+  printf "%b" "$output"
 }
 
 get_markdown_header() {
@@ -569,26 +576,14 @@ get_markdown_header() {
   printf "%b" "$output"
 }
 
-markdown_row() {
-  local tool="$1"
-  local file="$2"
-  local checkmark="$3"
-  printf "%b" "| ${tool} | \`${file}\` | ${checkmark} |\n"
-}
-
-format_table() {
-  local -n ft_output_ref="$1"
-  local header="$2"
-  local row_formatter="$3"
-
-  local output
-  output="$header"
-  output+=$'\n'
+get_markdown_rows() {
+  local -n gmr_output_ref="$1"
 
   local entry tool file checkmark
-  for entry in "${ft_output_ref[@]}"; do
+
+  for entry in "${gmr_output_ref[@]}"; do
     IFS=":" read -r tool file checkmark <<<"$entry"
-    output+="$("$row_formatter" "$tool" "$file" "$checkmark")"
+    output+="| ${tool} | \`${file}\` | ${checkmark} |"
     output+=$'\n'
   done
 
@@ -651,15 +646,18 @@ print_summary() {
   # shellcheck disable=SC2034
   local -a table_fields=("Tool" "File" "Result")
 
+  local console_summary
+  console_summary="$(get_console_header "output_ref" "table_fields")"
+  console_summary+=$'\n'
+  console_summary+="$(get_console_rows "output_ref")"
+  print_to_console "$console_summary"
+
   if $ci_mode; then
-    local markdown_header
-    markdown_header="$(get_markdown_header "table_fields")"
-    write_to_github_step_summary "$(format_table "output_ref" "$markdown_header" markdown_row)"
-    print_to_console "$(format_table "output_ref" console_header console_row)"
-  else
-    local console_header
-    console_header="$(get_console_header "output_ref" "table_fields")"
-    print_to_console "$(format_table "output_ref" "$console_header" console_row)"
+    local markdown_summary
+    markdown_summary="$(get_markdown_header "table_fields")"
+    console_summary+=$'\n'
+    markdown_summary+="$(get_markdown_rows "output_ref")"
+    write_to_github_step_summary "$markdown_summary"
   fi
 
   return "$status"
