@@ -532,13 +532,13 @@ build_tool_statuses() {
   done
 }
 
-console_header() {
-  local -n ch_output_ref="$1"
+get_console_header() {
+  local -n gch_output_ref="$1"
 
   # Generate a dynamic separator.
   local max_tool_length max_file_length
-  max_tool_length=$(max_field_length 0 ":" "${ch_output_ref[@]}")
-  max_file_length=$(max_field_length 1 ":" "${ch_output_ref[@]}")
+  max_tool_length=$(max_field_length 0 ":" "${gch_output_ref[@]}")
+  max_file_length=$(max_field_length 1 ":" "${gch_output_ref[@]}")
 
   local tool_separator file_separator
   tool_separator="$(printf '%*s' "$max_tool_length" '' | tr ' ' '-')"
@@ -557,7 +557,7 @@ console_row() {
   printf "%b" "${tool}\t${file}\t${checkmark}\n"
 }
 
-markdown_header() {
+get_markdown_header() {
   local output="| ${table_fields[0]} | ${table_fields[1]} | ${table_fields[2]} |\n"
   output+="| --- | --- | --- |\n"
 
@@ -573,11 +573,11 @@ markdown_row() {
 
 format_table() {
   local -n ft_output_ref="$1"
-  local header_formatter="$2"
+  local header="$2"
   local row_formatter="$3"
 
   local output
-  output="$("$header_formatter" "ft_ref_array")"
+  output="$header"
   output+=$'\n'
 
   local entry tool file checkmark
@@ -646,10 +646,14 @@ print_summary() {
   local -a table_fields=("Tool" "File" "Result")
 
   if $ci_mode; then
-    write_to_github_step_summary "$(format_table "output_ref" markdown_header markdown_row)"
+    local markdown_header
+    markdown_header="$(get_markdown_header)"
+    write_to_github_step_summary "$(format_table "output_ref" "$markdown_header" markdown_row)"
     print_to_console "$(format_table "output_ref" console_header console_row)"
   else
-    print_to_console "$(format_table "output_ref" console_header console_row)"
+    local console_header
+    console_header="$(get_console_header "output_ref")"
+    print_to_console "$(format_table "output_ref" "$console_header" console_row)"
   fi
 
   return "$status"
