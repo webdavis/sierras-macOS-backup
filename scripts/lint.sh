@@ -552,20 +552,6 @@ get_console_header() {
   printf "%b" "$output"
 }
 
-get_console_rows() {
-  local -n gcr_output_ref="$1"
-
-  local entry tool file checkmark
-
-  for entry in "${gcr_output_ref[@]}"; do
-    IFS=":" read -r tool file checkmark <<<"$entry"
-    output+="${tool}\t${file}\t${checkmark}"
-    output+=$'\n'
-  done
-
-  printf "%b" "$output"
-}
-
 get_markdown_header() {
   local -n gmh_table_fields="$1"
 
@@ -576,14 +562,16 @@ get_markdown_header() {
   printf "%b" "$output"
 }
 
-get_markdown_rows() {
-  local -n gmr_output_ref="$1"
+get_rows() {
+  local -n gr_output_ref="$1"
+  local format="$2"
 
   local entry tool file checkmark
 
-  for entry in "${gmr_output_ref[@]}"; do
+  for entry in "${gr_output_ref[@]}"; do
     IFS=":" read -r tool file checkmark <<<"$entry"
-    output+="| ${tool} | \`${file}\` | ${checkmark} |"
+    # shellcheck disable=SC2059
+    output+="$(printf "$format" "$tool" "$file" "$checkmark")"
     output+=$'\n'
   done
 
@@ -596,6 +584,7 @@ generate_output_reference() {
   local status=0
 
   local entry tool file code
+
   for entry in "${TOOL_STATUSES[@]}"; do
     IFS=":" read -r tool file code <<<"$entry"
 
@@ -628,6 +617,7 @@ write_to_github_step_summary() {
     echo "### 📝 Lint／Format Summary"
     echo ""
     printf "%b" "$output"
+    console_summary+="$(get_rows "output_ref" "%s\t%s\t%s")"
   } >>"$GITHUB_STEP_SUMMARY"
 }
 
@@ -649,14 +639,15 @@ print_summary() {
   local console_summary
   console_summary="$(get_console_header "output_ref" "table_fields")"
   console_summary+=$'\n'
-  console_summary+="$(get_console_rows "output_ref")"
+  console_summary+="$(get_rows "output_ref" "%s\t%s\t%s")"
   print_to_console "$console_summary"
 
   if $ci_mode; then
     local markdown_summary
     markdown_summary="$(get_markdown_header "table_fields")"
     console_summary+=$'\n'
-    markdown_summary+="$(get_markdown_rows "output_ref")"
+    # shellcheck disable=SC2016
+    markdown_summary+="$(get_rows "output_ref" '| %s | `%s` | %s |')"
     write_to_github_step_summary "$markdown_summary"
   fi
 
