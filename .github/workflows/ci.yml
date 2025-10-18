@@ -1,4 +1,4 @@
-name: CI - Install Homebrew CLI Tools
+name: CI
 
 on:
   push:
