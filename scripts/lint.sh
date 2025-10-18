@@ -546,7 +546,8 @@ get_console_header() {
   file_separator="$(printf '%*s' "$max_file_length" '' | tr ' ' '-')"
 
   local output="${gch_table_fields[0]}\t${gch_table_fields[1]}\t${gch_table_fields[2]}\n"
-  output+="${tool_separator}\t${file_separator}\t-------\n"
+  output+="${tool_separator}\t${file_separator}\t-------"
+  output+=$'\n'
 
   printf "%b" "$output"
 }
@@ -562,7 +563,8 @@ get_markdown_header() {
   local -n gmh_table_fields="$1"
 
   local output="| ${gmh_table_fields[0]} | ${gmh_table_fields[1]} | ${gmh_table_fields[2]} |\n"
-  output+="| --- | --- | --- |\n"
+  output+="| --- | --- | --- |"
+  output+=$'\n'
 
   printf "%b" "$output"
 }
