@@ -560,13 +560,14 @@ get_markdown_header() {
 }
 
 get_rows() {
-  local -n gr_output="$1"
-  local format="$2"
+  local format="$1"
+  shift 1
+  local output=("$@")
 
   local entry tool file checkmark
 
   local rows
-  for entry in "${gr_output[@]}"; do
+  for entry in "${output[@]}"; do
     IFS=":" read -r tool file checkmark <<<"$entry"
     # shellcheck disable=SC2059
     rows+="$(printf "$format" "$tool" "$file" "$checkmark")"
@@ -577,7 +578,7 @@ get_rows() {
 }
 
 generate_output() {
-  local -n gor_output="$1"
+  local output=("$@")
 
   local status=0
 
@@ -598,7 +599,7 @@ generate_output() {
       checkmark="✅"
     fi
 
-    gor_output+=("${tool}:${file}:${checkmark}")
+    output+=("${tool}:${file}:${checkmark}")
   done
 
   return "$status"
@@ -625,10 +626,9 @@ print_summary() {
 
   build_tool_statuses
 
-  # shellcheck disable=SC2034
   local -a output
   local status=0
-  generate_output "output" || status="$?"
+  generate_output "${output[@]}" || status="$?"
 
   local -a fields=("Tool" "File" "Result")
 
@@ -639,7 +639,7 @@ print_summary() {
   local console_summary
   console_summary="$(get_console_header "$tool_length" "$file_length" "${fields[@]}")"
   console_summary+=$'\n'
-  console_summary+="$(get_rows "%s\t%s\t%s" "output")"
+  console_summary+="$(get_rows "%s\t%s\t%s" "${output[@]}")"
   print_to_console "$console_summary"
 
   if $ci_mode; then
@@ -647,7 +647,7 @@ print_summary() {
     markdown_summary="$(get_markdown_header "${fields[@]}")"
     console_summary+=$'\n'
     # shellcheck disable=SC2016
-    markdown_summary+="$(get_rows "output" '| %s | `%s` | %s |')"
+    markdown_summary+="$(get_rows '| %s | `%s` | %s |' "${output[@]}")"
     write_to_github_step_summary "$markdown_summary"
   fi
 
