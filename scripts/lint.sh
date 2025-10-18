@@ -534,6 +534,7 @@ build_tool_statuses() {
 
 get_console_header() {
   local -n gch_output_ref="$1"
+  local -n gch_table_fields="$2"
 
   # Generate a dynamic separator.
   local max_tool_length max_file_length
@@ -544,7 +545,7 @@ get_console_header() {
   tool_separator="$(printf '%*s' "$max_tool_length" '' | tr ' ' '-')"
   file_separator="$(printf '%*s' "$max_file_length" '' | tr ' ' '-')"
 
-  local output="${table_fields[0]}\t${table_fields[1]}\t${table_fields[2]}\n"
+  local output="${gch_table_fields[0]}\t${gch_table_fields[1]}\t${gch_table_fields[2]}\n"
   output+="${tool_separator}\t${file_separator}\t-------\n"
 
   printf "%b" "$output"
@@ -558,7 +559,9 @@ console_row() {
 }
 
 get_markdown_header() {
-  local output="| ${table_fields[0]} | ${table_fields[1]} | ${table_fields[2]} |\n"
+  local -n gmh_table_fields="$1"
+
+  local output="| ${gmh_table_fields[0]} | ${gmh_table_fields[1]} | ${gmh_table_fields[2]} |\n"
   output+="| --- | --- | --- |\n"
 
   printf "%b" "$output"
@@ -643,16 +646,17 @@ print_summary() {
   local status=0
   generate_output_reference "output_ref" || status="$?"
 
+  # shellcheck disable=SC2034
   local -a table_fields=("Tool" "File" "Result")
 
   if $ci_mode; then
     local markdown_header
-    markdown_header="$(get_markdown_header)"
+    markdown_header="$(get_markdown_header "table_fields")"
     write_to_github_step_summary "$(format_table "output_ref" "$markdown_header" markdown_row)"
     print_to_console "$(format_table "output_ref" console_header console_row)"
   else
     local console_header
-    console_header="$(get_console_header "output_ref")"
+    console_header="$(get_console_header "output_ref" "table_fields")"
     print_to_console "$(format_table "output_ref" "$console_header" console_row)"
   fi
 
