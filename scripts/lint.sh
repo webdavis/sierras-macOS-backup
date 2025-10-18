@@ -639,7 +639,7 @@ print_summary() {
   local console_summary
   console_summary="$(get_console_header "$tool_length" "$file_length" "${fields[@]}")"
   console_summary+=$'\n'
-  console_summary+="$(get_rows "output" "%s\t%s\t%s")"
+  console_summary+="$(get_rows "%s\t%s\t%s" "output")"
   print_to_console "$console_summary"
 
   if $ci_mode; then
