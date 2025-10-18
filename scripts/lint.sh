@@ -533,10 +533,12 @@ build_tool_statuses() {
 }
 
 console_header() {
+  local -n ch_output_ref="$1"
+
   # Generate a dynamic separator.
   local max_tool_length max_file_length
-  max_tool_length=$(max_field_length 0 ":" "${output_ref[@]}")
-  max_file_length=$(max_field_length 1 ":" "${output_ref[@]}")
+  max_tool_length=$(max_field_length 0 ":" "${ch_output_ref[@]}")
+  max_file_length=$(max_field_length 1 ":" "${ch_output_ref[@]}")
 
   local tool_separator file_separator
   tool_separator="$(printf '%*s' "$max_tool_length" '' | tr ' ' '-')"
@@ -570,15 +572,16 @@ markdown_row() {
 }
 
 format_table() {
-  local header_formatter="$1"
-  local row_formatter="$2"
+  local -n ft_output_ref="$1"
+  local header_formatter="$2"
+  local row_formatter="$3"
 
   local output
-  output="$("$header_formatter")"
+  output="$("$header_formatter" "ft_ref_array")"
   output+=$'\n'
 
   local entry tool file checkmark
-  for entry in "${output_ref[@]}"; do
+  for entry in "${ft_output_ref[@]}"; do
     IFS=":" read -r tool file checkmark <<<"$entry"
     output+="$("$row_formatter" "$tool" "$file" "$checkmark")"
     output+=$'\n'
@@ -588,6 +591,8 @@ format_table() {
 }
 
 generate_output_reference() {
+  local -n gor_output_ref="$1"
+
   local status=0
 
   local entry tool file code
@@ -606,7 +611,7 @@ generate_output_reference() {
       checkmark="✅"
     fi
 
-    output_ref+=("${tool}:${file}:${checkmark}")
+    gor_output_ref+=("${tool}:${file}:${checkmark}")
   done
 
   return "$status"
@@ -633,17 +638,18 @@ print_summary() {
 
   build_tool_statuses
 
+  # shellcheck disable=SC2034
   local -a output_ref
   local status=0
-  generate_output_reference || status="$?"
+  generate_output_reference "output_ref" || status="$?"
 
   local -a table_fields=("Tool" "File" "Result")
 
   if $ci_mode; then
-    write_to_github_step_summary "$(format_table markdown_header markdown_row)"
-    print_to_console "$(format_table console_header console_row)"
+    write_to_github_step_summary "$(format_table "output_ref" markdown_header markdown_row)"
+    print_to_console "$(format_table "output_ref" console_header console_row)"
   else
-    print_to_console "$(format_table console_header console_row)"
+    print_to_console "$(format_table "output_ref" console_header console_row)"
   fi
 
   return "$status"
