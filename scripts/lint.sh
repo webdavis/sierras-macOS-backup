@@ -535,13 +535,14 @@ build_tool_statuses() {
 get_console_header() {
   local tool_length="$1"
   local file_length="$2"
-  local -n gch_fields="$3"
+  shift 2
+  local fields=("$@")
 
   local tool_separator file_separator
   tool_separator="$(printf '%*s' "$tool_length" '' | tr ' ' '-')"
   file_separator="$(printf '%*s' "$file_length" '' | tr ' ' '-')"
 
-  local header="${gch_fields[0]}\t${gch_fields[1]}\t${gch_fields[2]}\n"
+  local header="${fields[0]}\t${fields[1]}\t${fields[2]}\n"
   header+="${tool_separator}\t${file_separator}\t-------"
   header+=$'\n'
 
@@ -549,9 +550,9 @@ get_console_header() {
 }
 
 get_markdown_header() {
-  local -n gmh_fields="$1"
+  local fields=("$@")
 
-  local header="| ${gmh_fields[0]} | ${gmh_fields[1]} | ${gmh_fields[2]} |\n"
+  local header="| ${fields[0]} | ${fields[1]} | ${fields[2]} |\n"
   header+="| --- | --- | --- |"
   header+=$'\n'
 
@@ -629,7 +630,6 @@ print_summary() {
   local status=0
   generate_output "output" || status="$?"
 
-  # shellcheck disable=SC2034
   local -a fields=("Tool" "File" "Result")
 
   local tool_length file_length
@@ -637,14 +637,14 @@ print_summary() {
   file_length=$(max_field_length 1 ":" "${output[@]}")
 
   local console_summary
-  console_summary="$(get_console_header "$tool_length" "$file_length" "fields")"
+  console_summary="$(get_console_header "$tool_length" "$file_length" "${fields[@]}")"
   console_summary+=$'\n'
   console_summary+="$(get_rows "output" "%s\t%s\t%s")"
   print_to_console "$console_summary"
 
   if $ci_mode; then
     local markdown_summary
-    markdown_summary="$(get_markdown_header "fields")"
+    markdown_summary="$(get_markdown_header "${fields[@]}")"
     console_summary+=$'\n'
     # shellcheck disable=SC2016
     markdown_summary+="$(get_rows "output" '| %s | `%s` | %s |')"
