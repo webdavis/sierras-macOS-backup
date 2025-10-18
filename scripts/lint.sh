@@ -533,53 +533,50 @@ build_tool_statuses() {
 }
 
 get_console_header() {
-  local -n gch_output_ref="$1"
-  local -n gch_table_fields="$2"
-
-  # Generate a dynamic separator.
-  local max_tool_length max_file_length
-  max_tool_length=$(max_field_length 0 ":" "${gch_output_ref[@]}")
-  max_file_length=$(max_field_length 1 ":" "${gch_output_ref[@]}")
+  local tool_length="$1"
+  local file_length="$2"
+  local -n gch_fields="$3"
 
   local tool_separator file_separator
-  tool_separator="$(printf '%*s' "$max_tool_length" '' | tr ' ' '-')"
-  file_separator="$(printf '%*s' "$max_file_length" '' | tr ' ' '-')"
+  tool_separator="$(printf '%*s' "$tool_length" '' | tr ' ' '-')"
+  file_separator="$(printf '%*s' "$file_length" '' | tr ' ' '-')"
 
-  local output="${gch_table_fields[0]}\t${gch_table_fields[1]}\t${gch_table_fields[2]}\n"
-  output+="${tool_separator}\t${file_separator}\t-------"
-  output+=$'\n'
+  local header="${gch_fields[0]}\t${gch_fields[1]}\t${gch_fields[2]}\n"
+  header+="${tool_separator}\t${file_separator}\t-------"
+  header+=$'\n'
 
-  printf "%b" "$output"
+  printf "%b" "$header"
 }
 
 get_markdown_header() {
-  local -n gmh_table_fields="$1"
+  local -n gmh_fields="$1"
 
-  local output="| ${gmh_table_fields[0]} | ${gmh_table_fields[1]} | ${gmh_table_fields[2]} |\n"
-  output+="| --- | --- | --- |"
-  output+=$'\n'
+  local header="| ${gmh_fields[0]} | ${gmh_fields[1]} | ${gmh_fields[2]} |\n"
+  header+="| --- | --- | --- |"
+  header+=$'\n'
 
-  printf "%b" "$output"
+  printf "%b" "$header"
 }
 
 get_rows() {
-  local -n gr_output_ref="$1"
+  local -n gr_output="$1"
   local format="$2"
 
   local entry tool file checkmark
 
-  for entry in "${gr_output_ref[@]}"; do
+  local rows
+  for entry in "${gr_output[@]}"; do
     IFS=":" read -r tool file checkmark <<<"$entry"
     # shellcheck disable=SC2059
-    output+="$(printf "$format" "$tool" "$file" "$checkmark")"
-    output+=$'\n'
+    rows+="$(printf "$format" "$tool" "$file" "$checkmark")"
+    rows+=$'\n'
   done
 
-  printf "%b" "$output"
+  printf "%b" "$rows"
 }
 
-generate_output_reference() {
-  local -n gor_output_ref="$1"
+generate_output() {
+  local -n gor_output="$1"
 
   local status=0
 
@@ -600,15 +597,15 @@ generate_output_reference() {
       checkmark="✅"
     fi
 
-    gor_output_ref+=("${tool}:${file}:${checkmark}")
+    gor_output+=("${tool}:${file}:${checkmark}")
   done
 
   return "$status"
 }
 
 print_to_console() {
-  local output="$1"
-  printf "%b\n" "$output" | column -t -s $'\t' -c 200
+  local summary="$1"
+  printf "%b\n" "$summary" | column -t -s $'\t' -c 200
 }
 
 write_to_github_step_summary() {
@@ -628,25 +625,29 @@ print_summary() {
   build_tool_statuses
 
   # shellcheck disable=SC2034
-  local -a output_ref
+  local -a output
   local status=0
-  generate_output_reference "output_ref" || status="$?"
+  generate_output "output" || status="$?"
 
   # shellcheck disable=SC2034
-  local -a table_fields=("Tool" "File" "Result")
+  local -a fields=("Tool" "File" "Result")
+
+  local tool_length file_length
+  tool_length=$(max_field_length 0 ":" "${output[@]}")
+  file_length=$(max_field_length 1 ":" "${output[@]}")
 
   local console_summary
-  console_summary="$(get_console_header "output_ref" "table_fields")"
+  console_summary="$(get_console_header "$tool_length" "$file_length" "fields")"
   console_summary+=$'\n'
-  console_summary+="$(get_rows "output_ref" "%s\t%s\t%s")"
+  console_summary+="$(get_rows "output" "%s\t%s\t%s")"
   print_to_console "$console_summary"
 
   if $ci_mode; then
     local markdown_summary
-    markdown_summary="$(get_markdown_header "table_fields")"
+    markdown_summary="$(get_markdown_header "fields")"
     console_summary+=$'\n'
     # shellcheck disable=SC2016
-    markdown_summary+="$(get_rows "output_ref" '| %s | `%s` | %s |')"
+    markdown_summary+="$(get_rows "output" '| %s | `%s` | %s |')"
     write_to_github_step_summary "$markdown_summary"
   fi
 
