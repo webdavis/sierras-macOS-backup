@@ -618,7 +618,7 @@ write_to_github_step_summary() {
   } >>"$GITHUB_STEP_SUMMARY"
 }
 
-print_summary() {
+summarize_results() {
   local ci_mode="$1"
 
   print_section_title "SUMMARY"
@@ -670,7 +670,7 @@ main() {
 
   # --- Summarize results ---
   local status=0
-  print_summary "$ci_mode" || status="$?"
+  summarize_results "$ci_mode" || status="$?"
 
   return "$status"
 }
