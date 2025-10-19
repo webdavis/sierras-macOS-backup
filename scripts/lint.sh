@@ -21,33 +21,35 @@
 set -u
 
 # Global arrays used to hold script metadata:
-declare -A FILES
+declare -a SCRIPT_CONFIG
 declare -A EXIT_CODES
 
 # Global array used to hold temporary snapshot files for pre- and post-lint/format comparisons.
 # These snapshots are automatically removed up when this script exits via cleanup().
 declare -a SNAPSHOTS
 
-set_project_files() {
-  FILES=(
-    [nix_flake]="flake.nix"
-    [brewfile]="dot_Brewfile"
-    [readme]="README.md"
-    [this_script]="$(get_script_path)"
-    [brew_sync_check]="scripts/brew-sync-check.sh"
-  )
-}
+set_script_config() {
+  local this_script
+  this_script="$(get_script_path)"
 
-set_tool_exit_codes() {
-  EXIT_CODES=(
-    [nixfmt]=0
-    [rubocop]=0
-    [mdformat]=0
-    [shellcheck_this_script]=0
-    [shellcheck_brew_sync_check]=0
-    [shfmt_this_script]=0
-    [shfmt_brew_sync_check]=0
+  verify_required_tools "treefmt" "rubocop" "mdformat" "shellcheck" "shfmt"
+
+  SCRIPT_CONFIG=(
+    "nixfmt|flake.nix|NIXFMT (FORMATING)|nixfmt_runner"
+    "rubocop|dot_Brewfile|RUBOCOP (LINTING & FORMATTING)|rubocop_runner"
+    "mdformat|README.md|MDFORMAT (FORMATTING)|mdformat_runner"
+    "shellcheck_this_script|${this_script}|SHELLCHECK (LINTING)|shellcheck_runner"
+    "shfmt_this_script|${this_script}|SHFMT (FORMATTING)|shfmt_runner"
+    "shellcheck_brew_sync_check|scripts/brew-sync-check.sh|SHELLCHECK (LINTING)|shellcheck_runner"
+    "shfmt_brew_sync_check|scripts/brew-sync-check.sh|SHFMT (FORMATTING)|shfmt_runner"
   )
+
+  # Populate all global arrays from a single source:
+  local entry tool
+  for entry in "${SCRIPT_CONFIG[@]}"; do
+    IFS="|" read -r tool _ <<<"$entry"
+    EXIT_CODES[${tool}]=0
+  done
 }
 
 get_script_path() {
@@ -235,8 +237,9 @@ require_file() {
 
   local missing_files=()
 
-  local file
-  for file in "${FILES[@]}"; do
+  local entry tool file
+  for entry in "${SCRIPT_CONFIG[@]}"; do
+    IFS='|' read -r tool file _ <<<"$entry"
     if [[ ! -f $file ]]; then
       missing_files+=("$file")
     fi
@@ -406,7 +409,7 @@ run_tool() {
 
   local status=0
 
-  "${command[@]}" "$file" || status=$?
+  "${command[@]}" "$file" "$ci_mode" || status=$?
 
   echo
 
@@ -438,8 +441,8 @@ mdformat_runner() {
 }
 
 shellcheck_runner() {
-  local ci_mode="$1"
-  local file="$2"
+  local file="$1"
+  local ci_mode="$2"
 
   local status=0
   if $ci_mode; then
@@ -475,59 +478,26 @@ run_all_tools() {
   local ci_mode="$1"
   local project_root="$2"
 
-  verify_required_tools "treefmt" "rubocop" "mdformat" "shellcheck" "shfmt"
-
-  local runners=(
-    "${FILES[nix_flake]}|NIXFMT (FORMATTING)|treefmt|nix_flake|nixfmt_runner"
-    "${FILES[brewfile]}|RUBOCOP (LINTING & FORMATTING)|rubocop|rubocop|rubocop_runner"
-    "${FILES[readme]}|MDFORMAT (FORMATTING)|mdformat|mdformat|mdformat_runner"
-    "${FILES[this_script]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_this_script|shellcheck_runner|$ci_mode|${FILES[this_script]}"
-    "${FILES[brew_sync_check]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_brew_sync_check|shellcheck_runner|$ci_mode|${FILES[brew_sync_check]}"
-    "${FILES[this_script]}|SHFMT (FORMATTING)|shfmt|shfmt_this_script|shfmt_runner"
-    "${FILES[brew_sync_check]}|SHFMT (FORMATTING)|shfmt|shfmt_brew_sync_check|shfmt_runner"
-  )
-
-  local entry file title tool exit_code runner arg1 arg2
-  for entry in "${runners[@]}"; do
-    IFS='|' read -r file title tool exit_code runner arg1 arg2 <<<"$entry"
+  local entry key file title runner
+  local -a cmd=()
+  for entry in "${SCRIPT_CONFIG[@]}"; do
+    IFS='|' read -r key file title runner <<<"$entry"
 
     cmd=("$runner")
-    [[ -n $arg1 ]] && cmd+=("$arg1")
-    [[ -n $arg2 ]] && cmd+=("$arg2")
+
+    tool="${key%%_*}"
 
     run_tool "$ci_mode" "$file" "$project_root" "$title" "$tool" "${cmd[@]}" || {
-      EXIT_CODES[$exit_code]="$?"
+      EXIT_CODES[$tool]="$?"
     }
   done
 }
 
 build_tool_statuses() {
-  # Map of tools -> file keys:
-  local -A tool_file_map=(
-    [nixfmt]=nix_flake
-    [rubocop]=brewfile
-    [mdformat]=readme
-    [shellcheck_this_script]=this_script
-    [shellcheck_brew_sync_check]=brew_sync_check
-    [shfmt_this_script]=this_script
-    [shfmt_brew_sync_check]=brew_sync_check
-  )
-
-  local ordered_tools=(
-    nixfmt
-    rubocop
-    mdformat
-    shellcheck_this_script
-    shellcheck_brew_sync_check
-    shfmt_this_script
-    shfmt_brew_sync_check
-  )
-
-  local key tool file
-  for key in "${ordered_tools[@]}"; do
-    tool="$key"
-    file="${FILES[${tool_file_map[$key]}]##*/}"
-    printf "%s\n" "${tool}:${file}:${EXIT_CODES[$key]}"
+  local entry tool file
+  for entry in "${SCRIPT_CONFIG[@]}"; do
+    IFS='|' read -r tool file _ <<<"$entry"
+    printf "%s\n" "${tool%%_*}:${file##*/}:${EXIT_CODES[$tool]}"
   done
 }
 
@@ -624,7 +594,6 @@ summarize_results() {
 
   print_section_title "SUMMARY"
 
-
   local -a tool_statuses
   mapfile -t tool_statuses < <(build_tool_statuses)
 
@@ -656,15 +625,13 @@ main() {
   ci_mode="$(parse_script_flags "${args[@]}")"
 
   # --- Load project context ---
-  set_project_files
-
-  set_tool_exit_codes
+  set_script_config
 
   local project_root
   project_root="$(get_project_root)"
   change_to_project_root "$project_root"
 
-  ensure_nix_shell "${FILES[this_script]}" "$ci_mode"
+  ensure_nix_shell "$(get_script_path)" "$ci_mode"
   require_file "$project_root"
 
   # --- Run all tools ---
