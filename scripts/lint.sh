@@ -21,34 +21,35 @@
 set -u
 
 # Global arrays used to hold script metadata:
-declare -A FILES
+declare -a SCRIPT_CONFIG
 declare -A EXIT_CODES
-declare -a TOOL_STATUSES
 
 # Global array used to hold temporary snapshot files for pre- and post-lint/format comparisons.
 # These snapshots are automatically removed up when this script exits via cleanup().
 declare -a SNAPSHOTS
 
-set_project_files() {
-  FILES=(
-    [nix_flake]="flake.nix"
-    [brewfile]="dot_Brewfile"
-    [readme]="README.md"
-    [this_script]="$(get_script_path)"
-    [brew_sync_check]="scripts/brew-sync-check.sh"
-  )
-}
+set_script_config() {
+  local this_script
+  this_script="$(get_script_path)"
 
-set_tool_exit_codes() {
-  EXIT_CODES=(
-    [nixfmt]=0
-    [rubocop]=0
-    [mdformat]=0
-    [shellcheck_this_script]=0
-    [shellcheck_brew_sync_check]=0
-    [shfmt_this_script]=0
-    [shfmt_brew_sync_check]=0
+  verify_required_tools "treefmt" "rubocop" "mdformat" "shellcheck" "shfmt"
+
+  SCRIPT_CONFIG=(
+    "nixfmt|flake.nix|NIXFMT (FORMATING)|nixfmt_runner"
+    "rubocop|dot_Brewfile|RUBOCOP (LINTING & FORMATTING)|rubocop_runner"
+    "mdformat|README.md|MDFORMAT (FORMATTING)|mdformat_runner"
+    "shellcheck_this_script|${this_script}|SHELLCHECK (LINTING)|shellcheck_runner"
+    "shfmt_this_script|${this_script}|SHFMT (FORMATTING)|shfmt_runner"
+    "shellcheck_brew_sync_check|scripts/brew-sync-check.sh|SHELLCHECK (LINTING)|shellcheck_runner"
+    "shfmt_brew_sync_check|scripts/brew-sync-check.sh|SHFMT (FORMATTING)|shfmt_runner"
   )
+
+  # Populate all global arrays from a single source:
+  local entry tool
+  for entry in "${SCRIPT_CONFIG[@]}"; do
+    IFS="|" read -r tool _ <<<"$entry"
+    EXIT_CODES[${tool}]=0
+  done
 }
 
 get_script_path() {
@@ -236,8 +237,9 @@ require_file() {
 
   local missing_files=()
 
-  local file
-  for file in "${FILES[@]}"; do
+  local entry tool file
+  for entry in "${SCRIPT_CONFIG[@]}"; do
+    IFS='|' read -r tool file _ <<<"$entry"
     if [[ ! -f $file ]]; then
       missing_files+=("$file")
     fi
@@ -407,7 +409,7 @@ run_tool() {
 
   local status=0
 
-  "${command[@]}" "$file" || status=$?
+  "${command[@]}" "$file" "$ci_mode" || status=$?
 
   echo
 
@@ -439,8 +441,8 @@ mdformat_runner() {
 }
 
 shellcheck_runner() {
-  local ci_mode="$1"
-  local file="$2"
+  local file="$1"
+  local ci_mode="$2"
 
   local status=0
   if $ci_mode; then
@@ -476,122 +478,53 @@ run_all_tools() {
   local ci_mode="$1"
   local project_root="$2"
 
-  verify_required_tools "treefmt" "rubocop" "mdformat" "shellcheck" "shfmt"
-
-  local runners=(
-    "${FILES[nix_flake]}|NIXFMT (FORMATTING)|treefmt|nix_flake|nixfmt_runner"
-    "${FILES[brewfile]}|RUBOCOP (LINTING & FORMATTING)|rubocop|rubocop|rubocop_runner"
-    "${FILES[readme]}|MDFORMAT (FORMATTING)|mdformat|mdformat|mdformat_runner"
-    "${FILES[this_script]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_this_script|shellcheck_runner|$ci_mode|${FILES[this_script]}"
-    "${FILES[brew_sync_check]}|SHELLCHECK (LINTING)|shellcheck|shellcheck_brew_sync_check|shellcheck_runner|$ci_mode|${FILES[brew_sync_check]}"
-    "${FILES[this_script]}|SHFMT (FORMATTING)|shfmt|shfmt_this_script|shfmt_runner"
-    "${FILES[brew_sync_check]}|SHFMT (FORMATTING)|shfmt|shfmt_brew_sync_check|shfmt_runner"
-  )
-
-  local entry file title tool exit_code runner arg1 arg2
-  for entry in "${runners[@]}"; do
-    IFS='|' read -r file title tool exit_code runner arg1 arg2 <<<"$entry"
+  local entry key file title runner
+  local -a cmd=()
+  for entry in "${SCRIPT_CONFIG[@]}"; do
+    IFS='|' read -r key file title runner <<<"$entry"
 
     cmd=("$runner")
-    [[ -n $arg1 ]] && cmd+=("$arg1")
-    [[ -n $arg2 ]] && cmd+=("$arg2")
+
+    tool="${key%%_*}"
 
     run_tool "$ci_mode" "$file" "$project_root" "$title" "$tool" "${cmd[@]}" || {
-      EXIT_CODES[$exit_code]="$?"
+      EXIT_CODES[$tool]="$?"
     }
   done
 }
 
 build_tool_statuses() {
-  # Map of tools -> file keys:
-  local -A tool_file_map=(
-    [nixfmt]=nix_flake
-    [rubocop]=brewfile
-    [mdformat]=readme
-    [shellcheck_this_script]=this_script
-    [shellcheck_brew_sync_check]=brew_sync_check
-    [shfmt_this_script]=this_script
-    [shfmt_brew_sync_check]=brew_sync_check
-  )
-
-  local ordered_tools=(
-    nixfmt
-    rubocop
-    mdformat
-    shellcheck_this_script
-    shellcheck_brew_sync_check
-    shfmt_this_script
-    shfmt_brew_sync_check
-  )
-
-  local key tool file
-  for key in "${ordered_tools[@]}"; do
-    tool="$key"
-    file="${FILES[${tool_file_map[$key]}]##*/}"
-    TOOL_STATUSES+=("${tool}:${file}:${EXIT_CODES[$key]}")
+  local entry tool file
+  for entry in "${SCRIPT_CONFIG[@]}"; do
+    IFS='|' read -r tool file _ <<<"$entry"
+    printf "%s\n" "${tool%%_*}:${file##*/}:${EXIT_CODES[$tool]}"
   done
 }
 
-console_header() {
-  # Generate a dynamic separator.
-  local max_tool_length max_file_length
-  max_tool_length=$(max_field_length 0 ":" "${output_ref[@]}")
-  max_file_length=$(max_field_length 1 ":" "${output_ref[@]}")
+get_rows() {
+  local format="$1"
+  shift 1
+  local output=("$@")
 
-  local tool_separator file_separator
-  tool_separator="$(printf '%*s' "$max_tool_length" '' | tr ' ' '-')"
-  file_separator="$(printf '%*s' "$max_file_length" '' | tr ' ' '-')"
+  local entry tool file checkmark rows=""
 
-  local output="${table_fields[0]}\t${table_fields[1]}\t${table_fields[2]}\n"
-  output+="${tool_separator}\t${file_separator}\t-------\n"
-
-  printf "%b" "$output"
-}
-
-console_row() {
-  local tool="$1"
-  local file="$2"
-  local checkmark="$3"
-  printf "%b" "${tool}\t${file}\t${checkmark}\n"
-}
-
-markdown_header() {
-  local output="| ${table_fields[0]} | ${table_fields[1]} | ${table_fields[2]} |\n"
-  output+="| --- | --- | --- |\n"
-
-  printf "%b" "$output"
-}
-
-markdown_row() {
-  local tool="$1"
-  local file="$2"
-  local checkmark="$3"
-  printf "%b" "| ${tool} | \`${file}\` | ${checkmark} |\n"
-}
-
-format_table() {
-  local header_formatter="$1"
-  local row_formatter="$2"
-
-  local output
-  output="$("$header_formatter")"
-  output+=$'\n'
-
-  local entry tool file checkmark
-  for entry in "${output_ref[@]}"; do
+  for entry in "${output[@]}"; do
     IFS=":" read -r tool file checkmark <<<"$entry"
-    output+="$("$row_formatter" "$tool" "$file" "$checkmark")"
-    output+=$'\n'
+
+    # shellcheck disable=SC2059
+    rows+="$(printf "$format" "$tool" "$file" "$checkmark")"$'\n'
   done
 
-  printf "%b" "$output"
+  printf "%b" "$rows"
 }
 
-generate_output_reference() {
+generate_output() {
+  local tool_statuses=("$@")
   local status=0
 
   local entry tool file code
-  for entry in "${TOOL_STATUSES[@]}"; do
+
+  for entry in "${tool_statuses[@]}"; do
     IFS=":" read -r tool file code <<<"$entry"
 
     # Trim whitespace:
@@ -606,44 +539,78 @@ generate_output_reference() {
       checkmark="✅"
     fi
 
-    output_ref+=("${tool}:${file}:${checkmark}")
+    printf '%s\n' "${tool}:${file}:${checkmark}"
   done
 
   return "$status"
 }
 
+get_console_divider() {
+  local array=("$@")
+
+  local tool_length file_length
+  tool_length=$(max_field_length 0 ":" "${output[@]}")
+  file_length=$(max_field_length 1 ":" "${output[@]}")
+
+  local tool_separator file_separator
+  tool_separator="$(printf '%*s' "$tool_length" '' | tr ' ' '-')"
+  file_separator="$(printf '%*s' "$file_length" '' | tr ' ' '-')"
+
+  printf "%b" "$tool_separator\t$file_separator\t-------"
+}
+
+build_summary() {
+  local -n gs_fields="$1"
+  local -n gs_output="$2"
+  local format="$3"
+  local divider="$4"
+
+  # shellcheck disable=SC2059
+  printf "%b" \
+    "$(printf "$format" "${gs_fields[@]}")" \
+    $'\n' \
+    "${divider}" \
+    $'\n' \
+    "$(get_rows "$format" "${gs_output[@]}")"
+}
+
 print_to_console() {
-  local output="$1"
-  printf "%b\n" "$output" | column -t -s $'\t' -c 200
+  local summary="$1"
+  printf "%b\n" "$summary" | column -t -s $'\t' -c 200
 }
 
 write_to_github_step_summary() {
-  local output="$1"
+  local summary="$1"
   {
     echo "### 📝 Lint／Format Summary"
     echo ""
-    printf "%b" "$output"
+    printf "%b" "$summary"
   } >>"$GITHUB_STEP_SUMMARY"
 }
 
-print_summary() {
+summarize_results() {
   local ci_mode="$1"
+  local status=0
 
   print_section_title "SUMMARY"
 
-  build_tool_statuses
+  local -a tool_statuses
+  mapfile -t tool_statuses < <(build_tool_statuses)
 
-  local -a output_ref
-  local status=0
-  generate_output_reference || status="$?"
+  local -a output
+  mapfile -t output < <(generate_output "${tool_statuses[@]}") || status="$?"
 
-  local -a table_fields=("Tool" "File" "Result")
+  local -a fields=("Tool" "File" "Result")
+
+  local console_format="%s\t%s\t%s"
+  local console_divider
+  console_divider="$(get_console_divider "${output[@]}")"
+  print_to_console "$(build_summary "fields" "output" "$console_format" "$console_divider")"
 
   if $ci_mode; then
-    write_to_github_step_summary "$(format_table markdown_header markdown_row)"
-    print_to_console "$(format_table console_header console_row)"
-  else
-    print_to_console "$(format_table console_header console_row)"
+    local markdown_format="| %s | %s | %s |"
+    local markdown_divider="| --- | --- | --- |"
+    write_to_github_step_summary "$(build_summary "fields" "output" "$markdown_format" "$markdown_divider")"
   fi
 
   return "$status"
@@ -658,15 +625,13 @@ main() {
   ci_mode="$(parse_script_flags "${args[@]}")"
 
   # --- Load project context ---
-  set_project_files
-
-  set_tool_exit_codes
+  set_script_config
 
   local project_root
   project_root="$(get_project_root)"
   change_to_project_root "$project_root"
 
-  ensure_nix_shell "${FILES[this_script]}" "$ci_mode"
+  ensure_nix_shell "$(get_script_path)" "$ci_mode"
   require_file "$project_root"
 
   # --- Run all tools ---
@@ -674,7 +639,7 @@ main() {
 
   # --- Summarize results ---
   local status=0
-  print_summary "$ci_mode" || status="$?"
+  summarize_results "$ci_mode" || status="$?"
 
   return "$status"
 }
