@@ -23,7 +23,6 @@ set -u
 # Global arrays used to hold script metadata:
 declare -A FILES
 declare -A EXIT_CODES
-declare -a TOOL_STATUSES
 
 # Global array used to hold temporary snapshot files for pre- and post-lint/format comparisons.
 # These snapshots are automatically removed up when this script exits via cleanup().
@@ -528,7 +527,7 @@ build_tool_statuses() {
   for key in "${ordered_tools[@]}"; do
     tool="$key"
     file="${FILES[${tool_file_map[$key]}]##*/}"
-    TOOL_STATUSES+=("${tool}:${file}:${EXIT_CODES[$key]}")
+    printf "%s\n" "${tool}:${file}:${EXIT_CODES[$key]}"
   done
 }
 
@@ -550,11 +549,12 @@ get_rows() {
 }
 
 generate_output() {
+  local tool_statuses=("$@")
   local status=0
 
   local entry tool file code
 
-  for entry in "${TOOL_STATUSES[@]}"; do
+  for entry in "${tool_statuses[@]}"; do
     IFS=":" read -r tool file code <<<"$entry"
 
     # Trim whitespace:
@@ -620,16 +620,18 @@ write_to_github_step_summary() {
 
 summarize_results() {
   local ci_mode="$1"
+  local status=0
 
   print_section_title "SUMMARY"
 
-  build_tool_statuses
+
+  local -a tool_statuses
+  mapfile -t tool_statuses < <(build_tool_statuses)
+
+  local -a output
+  mapfile -t output < <(generate_output "${tool_statuses[@]}") || status="$?"
 
   local -a fields=("Tool" "File" "Result")
-  local -a output
-
-  local status=0
-  mapfile -t output < <(generate_output) || status="$?"
 
   local console_format="%s\t%s\t%s"
   local console_divider
