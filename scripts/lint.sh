@@ -532,54 +532,24 @@ build_tool_statuses() {
   done
 }
 
-get_console_header() {
-  local tool_length="$1"
-  local file_length="$2"
-  shift 2
-  local fields=("$@")
-
-  local tool_separator file_separator
-  tool_separator="$(printf '%*s' "$tool_length" '' | tr ' ' '-')"
-  file_separator="$(printf '%*s' "$file_length" '' | tr ' ' '-')"
-
-  local header="${fields[0]}\t${fields[1]}\t${fields[2]}\n"
-  header+="${tool_separator}\t${file_separator}\t-------"
-  header+=$'\n'
-
-  printf "%b" "$header"
-}
-
-get_markdown_header() {
-  local fields=("$@")
-
-  local header="| ${fields[0]} | ${fields[1]} | ${fields[2]} |\n"
-  header+="| --- | --- | --- |"
-  header+=$'\n'
-
-  printf "%b" "$header"
-}
-
 get_rows() {
   local format="$1"
   shift 1
   local output=("$@")
 
-  local entry tool file checkmark
+  local entry tool file checkmark rows=""
 
-  local rows
   for entry in "${output[@]}"; do
     IFS=":" read -r tool file checkmark <<<"$entry"
+
     # shellcheck disable=SC2059
-    rows+="$(printf "$format" "$tool" "$file" "$checkmark")"
-    rows+=$'\n'
+    rows+="$(printf "$format" "$tool" "$file" "$checkmark")"$'\n'
   done
 
   printf "%b" "$rows"
 }
 
 generate_output() {
-  local output=("$@")
-
   local status=0
 
   local entry tool file code
@@ -599,10 +569,39 @@ generate_output() {
       checkmark="✅"
     fi
 
-    output+=("${tool}:${file}:${checkmark}")
+    printf '%s\n' "${tool}:${file}:${checkmark}"
   done
 
   return "$status"
+}
+
+get_console_divider() {
+  local array=("$@")
+
+  local tool_length file_length
+  tool_length=$(max_field_length 0 ":" "${output[@]}")
+  file_length=$(max_field_length 1 ":" "${output[@]}")
+
+  local tool_separator file_separator
+  tool_separator="$(printf '%*s' "$tool_length" '' | tr ' ' '-')"
+  file_separator="$(printf '%*s' "$file_length" '' | tr ' ' '-')"
+
+  printf "%b" "$tool_separator\t$file_separator\t-------"
+}
+
+build_summary() {
+  local -n gs_fields="$1"
+  local -n gs_output="$2"
+  local format="$3"
+  local divider="$4"
+
+  # shellcheck disable=SC2059
+  printf "%b" \
+    "$(printf "$format" "${gs_fields[@]}")" \
+    $'\n' \
+    "${divider}" \
+    $'\n' \
+    "$(get_rows "$format" "${gs_output[@]}")"
 }
 
 print_to_console() {
@@ -626,29 +625,21 @@ print_summary() {
 
   build_tool_statuses
 
-  local -a output
-  local status=0
-  generate_output "${output[@]}" || status="$?"
-
   local -a fields=("Tool" "File" "Result")
+  local -a output
 
-  local tool_length file_length
-  tool_length=$(max_field_length 0 ":" "${output[@]}")
-  file_length=$(max_field_length 1 ":" "${output[@]}")
+  local status=0
+  mapfile -t output < <(generate_output) || status="$?"
 
-  local console_summary
-  console_summary="$(get_console_header "$tool_length" "$file_length" "${fields[@]}")"
-  console_summary+=$'\n'
-  console_summary+="$(get_rows "%s\t%s\t%s" "${output[@]}")"
-  print_to_console "$console_summary"
+  local console_format="%s\t%s\t%s"
+  local console_divider
+  console_divider="$(get_console_divider "${output[@]}")"
+  print_to_console "$(build_summary "fields" "output" "$console_format" "$console_divider")"
 
   if $ci_mode; then
-    local markdown_summary
-    markdown_summary="$(get_markdown_header "${fields[@]}")"
-    console_summary+=$'\n'
-    # shellcheck disable=SC2016
-    markdown_summary+="$(get_rows '| %s | `%s` | %s |' "${output[@]}")"
-    write_to_github_step_summary "$markdown_summary"
+    local markdown_format="| %s | %s | %s |"
+    local markdown_divider="| --- | --- | --- |"
+    write_to_github_step_summary "$(build_summary "fields" "output" "$markdown_format" "$markdown_divider")"
   fi
 
   return "$status"
