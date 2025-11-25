@@ -560,18 +560,18 @@ get_console_divider() {
 }
 
 build_summary() {
-  local -n gs_fields="$1"
-  local -n gs_output="$2"
+  local -n bs_fields="$1"
+  local -n bs_output="$2"
   local format="$3"
   local divider="$4"
 
   # shellcheck disable=SC2059
   printf "%b" \
-    "$(printf "$format" "${gs_fields[@]}")" \
+    "$(printf "$format" "${bs_fields[@]}")" \
     $'\n' \
     "${divider}" \
     $'\n' \
-    "$(get_rows "$format" "${gs_output[@]}")"
+    "$(get_rows "$format" "${bs_output[@]}")"
 }
 
 print_to_console() {
