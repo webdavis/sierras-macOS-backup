@@ -15,7 +15,7 @@
 #   - RuboCop: https://docs.rubocop.org/rubocop/1.81/index.html
 #   - Mdformat: https://mdformat.readthedocs.io/en/stable/
 #   - Shellcheck: https://github.com/koalaman/shellcheck/wiki
-#   - shfmt: https://github.com/patrickvane/shfmt
+#   - shfmt: https://github.com/mvdan/sh
 
 # Exit immediately if any variables are unset.
 set -u
@@ -35,7 +35,7 @@ set_script_config() {
   verify_required_tools "treefmt" "rubocop" "mdformat" "shellcheck" "shfmt"
 
   SCRIPT_CONFIG=(
-    "nixfmt|flake.nix|NIXFMT (FORMATING)|nixfmt_runner"
+    "nixfmt|flake.nix|NIXFMT (FORMATTING)|nixfmt_runner"
     "rubocop|dot_Brewfile|RUBOCOP (LINTING & FORMATTING)|rubocop_runner"
     "mdformat|README.md|MDFORMAT (FORMATTING)|mdformat_runner"
     "shellcheck_this_script|${this_script}|SHELLCHECK (LINTING)|shellcheck_runner"
@@ -560,18 +560,18 @@ get_console_divider() {
 }
 
 build_summary() {
-  local -n gs_fields="$1"
-  local -n gs_output="$2"
+  local -n bs_fields="$1"
+  local -n bs_output="$2"
   local format="$3"
   local divider="$4"
 
   # shellcheck disable=SC2059
   printf "%b" \
-    "$(printf "$format" "${gs_fields[@]}")" \
+    "$(printf "$format" "${bs_fields[@]}")" \
     $'\n' \
     "${divider}" \
     $'\n' \
-    "$(get_rows "$format" "${gs_output[@]}")"
+    "$(get_rows "$format" "${bs_output[@]}")"
 }
 
 print_to_console() {
