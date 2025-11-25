@@ -15,6 +15,8 @@ flake.nix
 flake.lock
 
 # Ignore Ruby stuff:
+vendor/**
+.vendor/**
 .bundle/
 Gemfile
 Gemfile.lock
