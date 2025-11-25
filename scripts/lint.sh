@@ -15,7 +15,7 @@
 #   - RuboCop: https://docs.rubocop.org/rubocop/1.81/index.html
 #   - Mdformat: https://mdformat.readthedocs.io/en/stable/
 #   - Shellcheck: https://github.com/koalaman/shellcheck/wiki
-#   - shfmt: https://github.com/patrickvane/shfmt
+#   - shfmt: https://github.com/mvdan/sh
 
 # Exit immediately if any variables are unset.
 set -u
