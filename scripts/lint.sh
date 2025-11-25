@@ -35,7 +35,7 @@ set_script_config() {
   verify_required_tools "treefmt" "rubocop" "mdformat" "shellcheck" "shfmt"
 
   SCRIPT_CONFIG=(
-    "nixfmt|flake.nix|NIXFMT (FORMATING)|nixfmt_runner"
+    "nixfmt|flake.nix|NIXFMT (FORMATTING)|nixfmt_runner"
     "rubocop|dot_Brewfile|RUBOCOP (LINTING & FORMATTING)|rubocop_runner"
     "mdformat|README.md|MDFORMAT (FORMATTING)|mdformat_runner"
     "shellcheck_this_script|${this_script}|SHELLCHECK (LINTING)|shellcheck_runner"
