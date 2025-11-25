@@ -1,3 +1,8 @@
+# Prevent credentials from being copied outside this project.
+# ⚠️ These exclusions should mirror the exclusions in .gitignore
+*secret*
+pat.txt
+
 # Ignore GitHub files/directories:
 README.md
 LICENSE
